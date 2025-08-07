@@ -1,4 +1,4 @@
-# 🎮 Minecraft Forge Server Setup Utility
+# 🎮 Easy Minecraft Server Setup 2025
 
 <div align="center">
 
