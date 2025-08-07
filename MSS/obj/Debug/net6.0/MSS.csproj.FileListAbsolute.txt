@@ -1,0 +1,4 @@
+C:\Users\thewi\source\repos\MSS\MSS\obj\Debug\net6.0\MSS.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\thewi\source\repos\MSS\MSS\obj\Debug\net6.0\MSS.AssemblyInfoInputs.cache
+C:\Users\thewi\source\repos\MSS\MSS\obj\Debug\net6.0\MSS.AssemblyInfo.cs
+C:\Users\thewi\source\repos\MSS\MSS\obj\Debug\net6.0\MSS.csproj.CoreCompileInputs.cache
