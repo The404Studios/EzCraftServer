@@ -48,7 +48,7 @@
                                 </TextBlock>
                             </StackPanel>
                         </Border>
-                        <ProgressBar Value="{Binding DownloadQueue.OverallProgress}" Maximum="100"
+                        <ProgressBar Value="{Binding DownloadQueue.OverallProgress, Mode=OneWay}" Maximum="100"
                                      Width="120" Height="6" Style="{StaticResource ModernProgressBar}"/>
                     </StackPanel>
 
