@@ -86,6 +86,24 @@ public partial class ModBrowserViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasVersionMismatch;
 
+    [ObservableProperty]
+    private string _selectedSortBy = "Downloads";
+
+    [ObservableProperty]
+    private ObservableCollection<string> _availableSortOptions = new()
+    {
+        "Downloads", "Newest", "Updated", "Name A-Z", "Name Z-A"
+    };
+
+    [ObservableProperty]
+    private string _selectedModLoader = "All";
+
+    [ObservableProperty]
+    private ObservableCollection<string> _availableModLoaders = new()
+    {
+        "All", "Forge", "Fabric", "NeoForge", "Quilt"
+    };
+
     // Property to get the server's Minecraft version
     public string? ServerGameVersion => _mainViewModel?.SelectedProfile?.MinecraftVersion;
 
@@ -262,9 +280,10 @@ public partial class ModBrowserViewModel : ViewModelBase
             var allMods = cfMods.Concat(mrMods)
                 .Where(m => m != null && !string.IsNullOrEmpty(m.Name))
                 .GroupBy(m => m.Name.ToLower().Replace(" ", ""))
-                .Select(g => g.First())
-                .OrderByDescending(m => m.DownloadCount)
-                .Take(30);
+                .Select(g => g.First());
+
+            // Apply sorting
+            allMods = ApplySorting(allMods).Take(30);
 
             foreach (var mod in allMods)
             {
@@ -523,5 +542,44 @@ public partial class ModBrowserViewModel : ViewModelBase
 
         AddToSelected(mod);
         await InstallSelectedModsAsync();
+    }
+
+    private IEnumerable<ModInfo> ApplySorting(IEnumerable<ModInfo> mods)
+    {
+        return SelectedSortBy switch
+        {
+            "Downloads" => mods.OrderByDescending(m => m.DownloadCount),
+            "Newest" => mods.OrderByDescending(m => m.DateCreated),
+            "Updated" => mods.OrderByDescending(m => m.DateModified),
+            "Name A-Z" => mods.OrderBy(m => m.Name),
+            "Name Z-A" => mods.OrderByDescending(m => m.Name),
+            _ => mods.OrderByDescending(m => m.DownloadCount)
+        };
+    }
+
+    partial void OnSelectedSortByChanged(string value)
+    {
+        // Re-run search or load with new sort order
+        if (!string.IsNullOrEmpty(SearchQuery))
+        {
+            Task.Run(() => SearchAsync());
+        }
+        else if (SearchResults.Count > 0)
+        {
+            Task.Run(() => LoadPopularAsync());
+        }
+    }
+
+    partial void OnSelectedModLoaderChanged(string value)
+    {
+        // Re-run search or load with new filter
+        if (!string.IsNullOrEmpty(SearchQuery))
+        {
+            Task.Run(() => SearchAsync());
+        }
+        else if (SearchResults.Count > 0)
+        {
+            Task.Run(() => LoadPopularAsync());
+        }
     }
 }
