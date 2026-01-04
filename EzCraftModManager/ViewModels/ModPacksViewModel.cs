@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -120,6 +122,7 @@ public partial class ModPacksViewModel : ViewModelBase
     private async Task LoadPackModsAsync(ModPack pack)
     {
         IsLoading = true;
+        _modsFoundCount = 0;
         ModsFound = 0;
         ModsTotal = pack.Mods?.Count ?? 0;
         ClearMessages();
@@ -144,6 +147,8 @@ public partial class ModPacksViewModel : ViewModelBase
                 return;
             }
 
+            // Create all view models first
+            var viewModels = new List<ModPackItemViewModel>();
             foreach (var modItem in pack.Mods)
             {
                 if (modItem == null) continue;
@@ -156,6 +161,7 @@ public partial class ModPacksViewModel : ViewModelBase
                     IsSelected = modItem.IsRequired,
                     Status = "Searching..."
                 };
+                viewModels.Add(viewModel);
 
                 if (dispatcher != null)
                 {
@@ -165,60 +171,86 @@ public partial class ModPacksViewModel : ViewModelBase
                 {
                     PackMods.Add(viewModel);
                 }
-
-                // Search for mod
-                ModInfo? foundMod = null;
-
-                try
-                {
-                    // Try CurseForge first with ID if available
-                    if (modItem.CurseForgeId.HasValue && modItem.CurseForgeId.Value > 0)
-                    {
-                        foundMod = await _curseForge.GetModAsync(modItem.CurseForgeId.Value);
-                    }
-
-                    // Search by name on CurseForge
-                    if (foundMod == null && !string.IsNullOrEmpty(modItem.SearchQuery))
-                    {
-                        var cfResults = await _curseForge.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
-                        foundMod = cfResults?.FirstOrDefault();
-                    }
-
-                    // Try Modrinth with ID if available
-                    if (foundMod == null && !string.IsNullOrEmpty(modItem.ModrinthId))
-                    {
-                        foundMod = await _modrinth.GetModAsync(modItem.ModrinthId);
-                    }
-
-                    // Search by name on Modrinth
-                    if (foundMod == null && !string.IsNullOrEmpty(modItem.SearchQuery))
-                    {
-                        var mrResults = await _modrinth.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
-                        foundMod = mrResults?.FirstOrDefault();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error searching for {modItem.SearchQuery}: {ex.Message}");
-                }
-
-                if (foundMod != null)
-                {
-                    viewModel.Mod = foundMod;
-                    viewModel.Status = "Available";
-                    viewModel.IsAvailable = true;
-                    viewModel.GameVersions = foundMod.GameVersions != null
-                        ? string.Join(", ", foundMod.GameVersions.Take(5))
-                        : "";
-                    ModsFound++;
-                }
-                else
-                {
-                    viewModel.Status = $"Not found for {gameVersion}";
-                    viewModel.IsAvailable = false;
-                    viewModel.IsSelected = false;
-                }
             }
+
+            // Load all mods in parallel with concurrency limit
+            var semaphore = new SemaphoreSlim(5); // Limit to 5 concurrent requests
+            var tasks = new List<Task>();
+
+            for (int i = 0; i < pack.Mods.Count; i++)
+            {
+                var modItem = pack.Mods[i];
+                var viewModel = viewModels[i];
+
+                if (modItem == null) continue;
+
+                tasks.Add(Task.Run(async () =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        ModInfo? foundMod = null;
+
+                        try
+                        {
+                            // Try CurseForge first with ID if available
+                            if (modItem.CurseForgeId.HasValue && modItem.CurseForgeId.Value > 0)
+                            {
+                                foundMod = await _curseForge.GetModAsync(modItem.CurseForgeId.Value);
+                            }
+
+                            // Search by name on CurseForge
+                            if (foundMod == null && !string.IsNullOrEmpty(modItem.SearchQuery))
+                            {
+                                var cfResults = await _curseForge.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
+                                foundMod = cfResults?.FirstOrDefault();
+                            }
+
+                            // Try Modrinth with ID if available
+                            if (foundMod == null && !string.IsNullOrEmpty(modItem.ModrinthId))
+                            {
+                                foundMod = await _modrinth.GetModAsync(modItem.ModrinthId);
+                            }
+
+                            // Search by name on Modrinth
+                            if (foundMod == null && !string.IsNullOrEmpty(modItem.SearchQuery))
+                            {
+                                var mrResults = await _modrinth.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
+                                foundMod = mrResults?.FirstOrDefault();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error searching for {modItem.SearchQuery}: {ex.Message}");
+                        }
+
+                        if (foundMod != null)
+                        {
+                            viewModel.Mod = foundMod;
+                            viewModel.Status = "Available";
+                            viewModel.IsAvailable = true;
+                            viewModel.GameVersions = foundMod.GameVersions != null
+                                ? string.Join(", ", foundMod.GameVersions.Take(5))
+                                : "";
+                            Interlocked.Increment(ref _modsFoundCount);
+                            ModsFound = _modsFoundCount;
+                        }
+                        else
+                        {
+                            viewModel.Status = $"Not found for {gameVersion}";
+                            viewModel.IsAvailable = false;
+                            viewModel.IsSelected = false;
+                        }
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+            ModsFound = _modsFoundCount;
 
             StatusMessage = $"Found {ModsFound}/{ModsTotal} mods for {gameVersion}";
         }
@@ -229,8 +261,11 @@ public partial class ModPacksViewModel : ViewModelBase
         finally
         {
             IsLoading = false;
+            _modsFoundCount = 0;
         }
     }
+
+    private int _modsFoundCount;
 
     [RelayCommand]
     private async Task InstallPackAsync()
