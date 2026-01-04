@@ -40,8 +40,7 @@
                 <!-- Server Icon -->
                 <Border Grid.Column="0" Background="{StaticResource SurfaceLightBrush}" CornerRadius="6"
                         Width="40" Height="40" Margin="0,0,12,0">
-                    <TextBlock Text="SERVER" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{StaticResource PrimaryBrush}"/>
+                    <TextBlock Text="🖥️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
 
                 <!-- Server Info -->
@@ -151,14 +150,14 @@
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="check"/>
+                                        <Setter Property="Text" Value="✓"/>
                                         <Setter Property="Foreground" Value="#1E1E1E"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding VersionsMatch}" Value="False">
                                                 <Setter Property="Text" Value="!"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
-                                                <Setter Property="Text" Value="X"/>
+                                                <Setter Property="Text" Value="✗"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
