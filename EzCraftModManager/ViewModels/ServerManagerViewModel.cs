@@ -325,13 +325,14 @@ public partial class ServerManagerViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task StartServerAsync()
+    private async Task StartServerAsync(ServerProfile? profile)
     {
-        if (SelectedProfile == null) return;
+        var targetProfile = profile ?? SelectedProfile;
+        if (targetProfile == null) return;
 
         try
         {
-            var startScript = Path.Combine(SelectedProfile.ServerPath, "start_server.bat");
+            var startScript = Path.Combine(targetProfile.ServerPath, "start_server.bat");
             if (!File.Exists(startScript))
             {
                 ErrorMessage = "Start script not found. Please reinstall the server.";
@@ -341,17 +342,17 @@ public partial class ServerManagerViewModel : ViewModelBase
             var processInfo = new ProcessStartInfo
             {
                 FileName = startScript,
-                WorkingDirectory = SelectedProfile.ServerPath,
+                WorkingDirectory = targetProfile.ServerPath,
                 UseShellExecute = true
             };
 
             _serverProcess = Process.Start(processInfo);
             IsServerRunning = true;
-            SelectedProfile.Status = ServerStatus.Running;
-            SelectedProfile.LastPlayed = DateTime.Now;
-            await _mainViewModel.SaveProfileAsync(SelectedProfile);
+            targetProfile.Status = ServerStatus.Running;
+            targetProfile.LastPlayed = DateTime.Now;
+            await _mainViewModel.SaveProfileAsync(targetProfile);
 
-            StatusMessage = $"Server '{SelectedProfile.Name}' started";
+            StatusMessage = $"Server '{targetProfile.Name}' started";
         }
         catch (Exception ex)
         {
@@ -378,15 +379,16 @@ public partial class ServerManagerViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenServerFolder()
+    private void OpenServerFolder(ServerProfile? profile)
     {
-        if (SelectedProfile == null) return;
+        var targetProfile = profile ?? SelectedProfile;
+        if (targetProfile == null) return;
 
         try
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = SelectedProfile.ServerPath,
+                FileName = targetProfile.ServerPath,
                 UseShellExecute = true
             });
         }

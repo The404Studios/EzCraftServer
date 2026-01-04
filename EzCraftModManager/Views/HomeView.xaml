@@ -40,7 +40,7 @@
             </Border>
 
             <!-- Quick Stats -->
-            <Grid>
+            <Grid Margin="0,0,0,24">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
@@ -97,6 +97,7 @@
                                         <TextBlock FontSize="32" Margin="0,0,0,8">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="📦"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Id}" Value="zombie-survival">
                                                             <Setter Property="Text" Value="🧟"/>
@@ -109,6 +110,9 @@
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding Id}" Value="ultimate-apocalypse">
                                                             <Setter Property="Text" Value="💀"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Id}" Value="performance">
+                                                            <Setter Property="Text" Value="⚡"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>

@@ -69,6 +69,7 @@
                                         <TextBlock FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="📦"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding Id}" Value="zombie-survival">
                                                             <Setter Property="Text" Value="🧟"/>
@@ -81,6 +82,9 @@
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding Id}" Value="ultimate-apocalypse">
                                                             <Setter Property="Text" Value="💀"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Id}" Value="performance">
+                                                            <Setter Property="Text" Value="⚡"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
