@@ -5,12 +5,14 @@ namespace EzCraftModManager.Models;
 
 public class ServerProfile
 {
+    private List<InstalledMod>? _installedMods;
+
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = "My Minecraft Server";
-    public string MinecraftVersion { get; set; } = "1.21.4";
+    public string MinecraftVersion { get; set; } = "1.20.1";
     public string ForgeVersion { get; set; } = string.Empty;
     public string ServerPath { get; set; } = string.Empty;
-    public string ModsPath => System.IO.Path.Combine(ServerPath, "mods");
+    public string ModsPath => !string.IsNullOrEmpty(ServerPath) ? System.IO.Path.Combine(ServerPath, "mods") : string.Empty;
     public int MaxPlayers { get; set; } = 20;
     public int RamGB { get; set; } = 4;
     public int Port { get; set; } = 25565;
@@ -21,7 +23,14 @@ public class ServerProfile
     public int ViewDistance { get; set; } = 10;
     public string OperatorUsername { get; set; } = string.Empty;
     public string Motd { get; set; } = "A Minecraft Server";
-    public List<InstalledMod> InstalledMods { get; set; } = new();
+
+    // InstalledMods is guaranteed to never be null
+    public List<InstalledMod> InstalledMods
+    {
+        get => _installedMods ??= new List<InstalledMod>();
+        set => _installedMods = value ?? new List<InstalledMod>();
+    }
+
     public DateTime CreatedDate { get; set; } = DateTime.Now;
     public DateTime LastPlayed { get; set; }
     public ServerStatus Status { get; set; } = ServerStatus.Stopped;

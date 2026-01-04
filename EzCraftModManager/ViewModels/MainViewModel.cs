@@ -40,6 +40,7 @@ public partial class MainViewModel : ViewModelBase
     public ServerManagerViewModel ServerManagerViewModel { get; }
     public ModPacksViewModel ModPacksViewModel { get; }
     public SettingsViewModel SettingsViewModel { get; }
+    public DownloaderViewModel DownloaderViewModel { get; }
 
     public MainViewModel()
     {
@@ -52,6 +53,7 @@ public partial class MainViewModel : ViewModelBase
         ServerManagerViewModel = new ServerManagerViewModel(this);
         ModPacksViewModel = new ModPacksViewModel(this);
         SettingsViewModel = new SettingsViewModel(this);
+        DownloaderViewModel = new DownloaderViewModel(this);
 
         CurrentView = HomeViewModel;
 
@@ -144,9 +146,23 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void NavigateToDownloader()
+    {
+        CurrentView = DownloaderViewModel;
+        CurrentViewName = "Downloads";
+        ShowDownloadQueue = false; // Close side panel when viewing full page
+    }
+
+    [RelayCommand]
     private void ToggleDownloadQueue()
     {
         ShowDownloadQueue = !ShowDownloadQueue;
+    }
+
+    [RelayCommand]
+    private void RetryAllFailed()
+    {
+        DownloadQueue.RetryFailed();
     }
 
     [RelayCommand]
@@ -174,18 +190,46 @@ public partial class MainViewModel : ViewModelBase
 
     public async Task SaveProfileAsync(ServerProfile profile)
     {
-        await _profileService.SaveProfileAsync(profile);
-        await RefreshProfilesAsync();
+        if (profile == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot save null profile");
+            return;
+        }
+
+        try
+        {
+            await _profileService.SaveProfileAsync(profile);
+            await RefreshProfilesAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error saving profile: {ex.Message}");
+            ErrorMessage = $"Error saving profile: {ex.Message}";
+        }
     }
 
     public async Task DeleteProfileAsync(ServerProfile profile)
     {
-        await _profileService.DeleteProfileAsync(profile.Id);
-        await RefreshProfilesAsync();
-
-        if (SelectedProfile?.Id == profile.Id)
+        if (profile == null)
         {
-            SelectedProfile = Profiles.Count > 0 ? Profiles[0] : null;
+            System.Diagnostics.Debug.WriteLine("Cannot delete null profile");
+            return;
+        }
+
+        try
+        {
+            await _profileService.DeleteProfileAsync(profile.Id);
+            await RefreshProfilesAsync();
+
+            if (SelectedProfile?.Id == profile.Id)
+            {
+                SelectedProfile = Profiles.Count > 0 ? Profiles[0] : null;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error deleting profile: {ex.Message}");
+            ErrorMessage = $"Error deleting profile: {ex.Message}";
         }
     }
 }

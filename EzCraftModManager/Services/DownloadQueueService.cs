@@ -80,11 +80,23 @@ public class DownloadQueueService : INotifyPropertyChanged
 
     public void EnqueueDownload(ModInfo mod, string gameVersion, string destinationFolder, ServerProfile? profile = null)
     {
+        if (mod == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot enqueue null mod");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(destinationFolder))
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot enqueue download with empty destination folder");
+            return;
+        }
+
         var queuedDownload = new QueuedDownload
         {
             Id = Guid.NewGuid().ToString(),
             Mod = mod,
-            GameVersion = gameVersion,
+            GameVersion = gameVersion ?? "1.20.1",
             DestinationFolder = destinationFolder,
             Profile = profile,
             Status = DownloadQueueStatus.Queued,
@@ -122,6 +134,70 @@ public class DownloadQueueService : INotifyPropertyChanged
         });
         TotalCompleted = 0;
         TotalFailed = 0;
+    }
+
+    /// <summary>
+    /// Retry all failed downloads that haven't exceeded max retries
+    /// </summary>
+    public void RetryFailed()
+    {
+        var toRetry = new System.Collections.Generic.List<QueuedDownload>();
+
+        UpdateOnUIThread(() =>
+        {
+            foreach (var download in FailedDownloads)
+            {
+                if (download.CanRetry)
+                {
+                    toRetry.Add(download);
+                }
+            }
+
+            foreach (var download in toRetry)
+            {
+                FailedDownloads.Remove(download);
+            }
+        });
+
+        foreach (var download in toRetry)
+        {
+            download.RetryCount++;
+            download.Status = DownloadQueueStatus.Queued;
+            download.Progress = 0;
+            download.ErrorMessage = null;
+            download.BytesDownloaded = 0;
+
+            _downloadQueue.Enqueue(download);
+            UpdateOnUIThread(() => ActiveDownloads.Add(download));
+            TotalFailed--;
+        }
+
+        if (toRetry.Count > 0)
+        {
+            _ = ProcessQueueAsync();
+        }
+    }
+
+    /// <summary>
+    /// Retry a specific failed download
+    /// </summary>
+    public void RetryDownload(QueuedDownload download)
+    {
+        if (download == null || !download.CanRetry) return;
+
+        UpdateOnUIThread(() => FailedDownloads.Remove(download));
+
+        download.RetryCount++;
+        download.Status = DownloadQueueStatus.Queued;
+        download.Progress = 0;
+        download.ErrorMessage = null;
+        download.BytesDownloaded = 0;
+
+        _downloadQueue.Enqueue(download);
+        UpdateOnUIThread(() => ActiveDownloads.Add(download));
+        TotalFailed--;
+
+        _ = ProcessQueueAsync();
     }
 
     private async Task ProcessQueueAsync()
@@ -167,35 +243,56 @@ public class DownloadQueueService : INotifyPropertyChanged
 
     private async Task ProcessDownloadAsync(QueuedDownload download, CancellationToken cancellationToken)
     {
+        if (download?.Mod == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot process download with null mod");
+            return;
+        }
+
+        var mod = download.Mod;
+        var modName = mod.Name ?? "Unknown Mod";
+        var gameVersion = download.GameVersion ?? "1.20.1";
+
         try
         {
             download.Status = DownloadQueueStatus.Downloading;
             download.StartTime = DateTime.Now;
-            CurrentStatus = $"Downloading {download.Mod.Name}...";
+            CurrentStatus = $"Downloading {modName}...";
 
             // Get compatible file
             ModFile? file = null;
 
-            if (download.Mod.Source == ModSource.CurseForge)
+            if (mod.Source == ModSource.CurseForge && mod.Id > 0)
             {
-                file = await _curseForge.GetCompatibleFileAsync(download.Mod.Id, download.GameVersion);
+                file = await _curseForge.GetCompatibleFileAsync(mod.Id, gameVersion);
             }
-            else if (download.Mod.Source == ModSource.Modrinth)
+            else if (mod.Source == ModSource.Modrinth && !string.IsNullOrEmpty(mod.Slug))
             {
-                file = await _modrinth.GetCompatibleFileAsync(download.Mod.Slug, download.GameVersion);
+                file = await _modrinth.GetCompatibleFileAsync(mod.Slug, gameVersion);
             }
 
             if (file == null || string.IsNullOrEmpty(file.DownloadUrl))
             {
-                throw new Exception($"No compatible file found for {download.GameVersion}");
+                throw new Exception($"No compatible file found for {gameVersion}");
+            }
+
+            if (string.IsNullOrEmpty(file.FileName))
+            {
+                throw new Exception("Downloaded file has no filename");
             }
 
             download.FileName = file.FileName;
             download.FileSize = file.FileSize;
             download.DownloadUrl = file.DownloadUrl;
 
-            var destinationPath = Path.Combine(download.DestinationFolder, file.FileName);
-            Directory.CreateDirectory(download.DestinationFolder);
+            var destinationFolder = download.DestinationFolder ?? "";
+            if (string.IsNullOrEmpty(destinationFolder))
+            {
+                throw new Exception("No destination folder specified");
+            }
+
+            var destinationPath = Path.Combine(destinationFolder, file.FileName);
+            Directory.CreateDirectory(destinationFolder);
 
             // Download with progress
             var progress = new Progress<DownloadProgress>(p =>
@@ -209,23 +306,23 @@ public class DownloadQueueService : INotifyPropertyChanged
             await _downloadService.DownloadFileAsync(file.DownloadUrl, destinationPath, progress, cancellationToken);
 
             // Download dependencies if needed
-            if (file.Dependencies.Count > 0)
+            if (file.Dependencies != null && file.Dependencies.Count > 0)
             {
                 download.Status = DownloadQueueStatus.DownloadingDependencies;
-                CurrentStatus = $"Downloading dependencies for {download.Mod.Name}...";
+                CurrentStatus = $"Downloading dependencies for {modName}...";
 
                 foreach (var dep in file.Dependencies)
                 {
-                    if (dep.Type != DependencyType.Required) continue;
+                    if (dep == null || dep.Type != DependencyType.Required) continue;
 
                     try
                     {
                         if (dep.ModId > 0)
                         {
-                            var depFile = await _curseForge.GetCompatibleFileAsync(dep.ModId, download.GameVersion);
-                            if (depFile != null && !string.IsNullOrEmpty(depFile.DownloadUrl))
+                            var depFile = await _curseForge.GetCompatibleFileAsync(dep.ModId, gameVersion);
+                            if (depFile != null && !string.IsNullOrEmpty(depFile.DownloadUrl) && !string.IsNullOrEmpty(depFile.FileName))
                             {
-                                var depPath = Path.Combine(download.DestinationFolder, depFile.FileName);
+                                var depPath = Path.Combine(destinationFolder, depFile.FileName);
                                 if (!File.Exists(depPath))
                                 {
                                     await _downloadService.DownloadFileAsync(depFile.DownloadUrl, depPath, null, cancellationToken);
@@ -233,9 +330,10 @@ public class DownloadQueueService : INotifyPropertyChanged
                             }
                         }
                     }
-                    catch
+                    catch (Exception depEx)
                     {
                         // Continue with other dependencies
+                        System.Diagnostics.Debug.WriteLine($"Error downloading dependency: {depEx.Message}");
                     }
                 }
             }
@@ -246,16 +344,16 @@ public class DownloadQueueService : INotifyPropertyChanged
             download.CompletedTime = DateTime.Now;
 
             // Add to profile if provided
-            if (download.Profile != null)
+            if (download.Profile?.InstalledMods != null)
             {
                 download.Profile.InstalledMods.Add(new InstalledMod
                 {
-                    ModId = download.Mod.Id,
-                    Name = download.Mod.Name,
+                    ModId = mod.Id,
+                    Name = modName,
                     FileName = file.FileName,
-                    Version = file.DisplayName,
+                    Version = file.DisplayName ?? "",
                     FilePath = destinationPath,
-                    Source = download.Mod.Source
+                    Source = mod.Source
                 });
             }
 
@@ -281,6 +379,7 @@ public class DownloadQueueService : INotifyPropertyChanged
         {
             download.Status = DownloadQueueStatus.Failed;
             download.ErrorMessage = ex.Message;
+            System.Diagnostics.Debug.WriteLine($"Download failed for {modName}: {ex}");
             UpdateOnUIThread(() =>
             {
                 ActiveDownloads.Remove(download);
@@ -336,6 +435,8 @@ public class QueuedDownload : INotifyPropertyChanged
     public DateTime QueuedTime { get; set; }
     public DateTime? StartTime { get; set; }
     public DateTime? CompletedTime { get; set; }
+    public int RetryCount { get; set; }
+    public const int MaxRetries = 2;
 
     private DownloadQueueStatus _status;
     public DownloadQueueStatus Status
@@ -372,13 +473,15 @@ public class QueuedDownload : INotifyPropertyChanged
         set { _errorMessage = value; OnPropertyChanged(); }
     }
 
+    public bool CanRetry => RetryCount < MaxRetries && (Status == DownloadQueueStatus.Failed);
+
     public string StatusText => Status switch
     {
-        DownloadQueueStatus.Queued => "Queued",
+        DownloadQueueStatus.Queued => RetryCount > 0 ? $"Queued (retry {RetryCount})" : "Queued",
         DownloadQueueStatus.Downloading => $"Downloading... {Progress:F0}%",
         DownloadQueueStatus.DownloadingDependencies => "Getting dependencies...",
         DownloadQueueStatus.Completed => "Completed",
-        DownloadQueueStatus.Failed => $"Failed: {ErrorMessage}",
+        DownloadQueueStatus.Failed => CanRetry ? $"Failed (will retry): {ErrorMessage}" : $"Failed: {ErrorMessage}",
         DownloadQueueStatus.Cancelled => "Cancelled",
         _ => "Unknown"
     };
