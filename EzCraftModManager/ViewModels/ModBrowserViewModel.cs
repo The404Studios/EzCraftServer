@@ -270,79 +270,104 @@ public partial class ModBrowserViewModel : ViewModelBase
     [RelayCommand]
     private async Task InstallSelectedModsAsync()
     {
-        if (_mainViewModel.SelectedProfile == null)
-        {
-            ErrorMessage = "Please select or create a server profile first";
-            return;
-        }
-
-        if (SelectedMods.Count == 0)
-        {
-            ErrorMessage = "No mods selected for installation";
-            return;
-        }
-
-        IsDownloading = true;
-        DownloadProgress = 0;
-        var modsFolder = _mainViewModel.SelectedProfile.ModsPath;
-
         try
         {
-            var totalMods = SelectedMods.Count;
-            var completed = 0;
-
-            foreach (var mod in SelectedMods.ToList())
+            var profile = _mainViewModel?.SelectedProfile;
+            if (profile == null)
             {
-                DownloadStatus = $"Installing {mod.Name} ({completed + 1}/{totalMods})...";
+                ErrorMessage = "Please select or create a server profile first";
+                return;
+            }
+
+            if (SelectedMods == null || SelectedMods.Count == 0)
+            {
+                ErrorMessage = "No mods selected for installation";
+                return;
+            }
+
+            var modsFolder = profile.ModsPath;
+            if (string.IsNullOrEmpty(modsFolder))
+            {
+                ErrorMessage = "Server mods folder path is not configured";
+                return;
+            }
+
+            IsDownloading = true;
+            DownloadProgress = 0;
+
+            var modsList = SelectedMods.Where(m => m != null).ToList();
+            var totalMods = modsList.Count;
+            var completed = 0;
+            var gameVersion = SelectedGameVersion ?? "1.20.1";
+
+            System.IO.Directory.CreateDirectory(modsFolder);
+
+            foreach (var mod in modsList)
+            {
+                if (mod == null) continue;
+
+                var modName = mod.Name ?? "Unknown Mod";
+                DownloadStatus = $"Installing {modName} ({completed + 1}/{totalMods})...";
 
                 ModFile? file = null;
 
-                // Get compatible file
-                if (mod.Source == ModSource.CurseForge)
+                try
                 {
-                    file = await _curseForge.GetCompatibleFileAsync(mod.Id, SelectedGameVersion);
-                }
-                else if (mod.Source == ModSource.Modrinth)
-                {
-                    file = await _modrinth.GetCompatibleFileAsync(mod.Slug, SelectedGameVersion);
-                }
-
-                if (file != null && !string.IsNullOrEmpty(file.DownloadUrl))
-                {
-                    var progress = new Progress<DownloadProgress>(p =>
+                    // Get compatible file
+                    if (mod.Source == ModSource.CurseForge && mod.Id > 0)
                     {
-                        DownloadProgress = (completed + p.ProgressPercentage / 100.0) / totalMods * 100;
-                    });
-
-                    await _downloadService.DownloadModWithDependenciesAsync(
-                        mod, file, modsFolder, _curseForge, _modrinth, SelectedGameVersion,
-                        null, CancellationToken.None);
-
-                    // Update profile
-                    _mainViewModel.SelectedProfile.InstalledMods.Add(new InstalledMod
+                        file = await _curseForge.GetCompatibleFileAsync(mod.Id, gameVersion);
+                    }
+                    else if (mod.Source == ModSource.Modrinth && !string.IsNullOrEmpty(mod.Slug))
                     {
-                        ModId = mod.Id,
-                        Name = mod.Name,
-                        FileName = file.FileName,
-                        Version = file.DisplayName,
-                        FilePath = System.IO.Path.Combine(modsFolder, file.FileName),
-                        Source = mod.Source
-                    });
+                        file = await _modrinth.GetCompatibleFileAsync(mod.Slug, gameVersion);
+                    }
+
+                    if (file != null && !string.IsNullOrEmpty(file.DownloadUrl) && !string.IsNullOrEmpty(file.FileName))
+                    {
+                        var progress = new Progress<DownloadProgress>(p =>
+                        {
+                            DownloadProgress = (completed + p.ProgressPercentage / 100.0) / totalMods * 100;
+                        });
+
+                        await _downloadService.DownloadModWithDependenciesAsync(
+                            mod, file, modsFolder, _curseForge, _modrinth, gameVersion,
+                            null, CancellationToken.None);
+
+                        // Update profile
+                        if (profile.InstalledMods != null)
+                        {
+                            profile.InstalledMods.Add(new InstalledMod
+                            {
+                                ModId = mod.Id,
+                                Name = modName,
+                                FileName = file.FileName,
+                                Version = file.DisplayName ?? "",
+                                FilePath = System.IO.Path.Combine(modsFolder, file.FileName),
+                                Source = mod.Source
+                            });
+                        }
+                    }
+                }
+                catch (Exception modEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error installing {modName}: {modEx.Message}");
                 }
 
                 completed++;
                 DownloadProgress = (double)completed / totalMods * 100;
             }
 
-            await _mainViewModel.SaveProfileAsync(_mainViewModel.SelectedProfile);
+            await _mainViewModel.SaveProfileAsync(profile);
 
             SelectedMods.Clear();
             DownloadStatus = $"Successfully installed {completed} mods!";
-            StatusMessage = $"Installed {completed} mods to {_mainViewModel.SelectedProfile.Name}";
+            StatusMessage = $"Installed {completed} mods to {profile.Name ?? "server"}";
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Installation error: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Installation error: {ex}");
         }
         finally
         {

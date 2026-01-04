@@ -119,55 +119,80 @@ public partial class ModPacksViewModel : ViewModelBase
     {
         IsLoading = true;
         ModsFound = 0;
-        ModsTotal = pack.Mods.Count;
+        ModsTotal = pack.Mods?.Count ?? 0;
         ClearMessages();
 
         try
         {
-            var gameVersion = SelectedVersion;
+            var gameVersion = SelectedVersion ?? "1.20.1";
+            var dispatcher = Application.Current?.Dispatcher;
 
-            await Application.Current.Dispatcher.InvokeAsync(() => PackMods.Clear());
+            if (dispatcher != null)
+            {
+                await dispatcher.InvokeAsync(() => PackMods.Clear());
+            }
+            else
+            {
+                PackMods.Clear();
+            }
+
+            if (pack.Mods == null || pack.Mods.Count == 0)
+            {
+                ErrorMessage = "No mods defined in this pack";
+                return;
+            }
 
             foreach (var modItem in pack.Mods)
             {
+                if (modItem == null) continue;
+
                 var viewModel = new ModPackItemViewModel
                 {
-                    SearchQuery = modItem.SearchQuery,
-                    Description = modItem.Description,
+                    SearchQuery = modItem.SearchQuery ?? "Unknown",
+                    Description = modItem.Description ?? "",
                     IsRequired = modItem.IsRequired,
                     IsSelected = modItem.IsRequired,
                     Status = "Searching..."
                 };
 
-                await Application.Current.Dispatcher.InvokeAsync(() => PackMods.Add(viewModel));
+                if (dispatcher != null)
+                {
+                    await dispatcher.InvokeAsync(() => PackMods.Add(viewModel));
+                }
+                else
+                {
+                    PackMods.Add(viewModel);
+                }
 
                 // Search for mod
                 ModInfo? foundMod = null;
 
                 try
                 {
-                    // Try CurseForge first
-                    if (modItem.CurseForgeId.HasValue)
+                    // Try CurseForge first with ID if available
+                    if (modItem.CurseForgeId.HasValue && modItem.CurseForgeId.Value > 0)
                     {
                         foundMod = await _curseForge.GetModAsync(modItem.CurseForgeId.Value);
                     }
 
-                    if (foundMod == null)
+                    // Search by name on CurseForge
+                    if (foundMod == null && !string.IsNullOrEmpty(modItem.SearchQuery))
                     {
                         var cfResults = await _curseForge.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
-                        foundMod = cfResults.FirstOrDefault();
+                        foundMod = cfResults?.FirstOrDefault();
                     }
 
-                    // Try Modrinth if not found on CurseForge
+                    // Try Modrinth with ID if available
                     if (foundMod == null && !string.IsNullOrEmpty(modItem.ModrinthId))
                     {
                         foundMod = await _modrinth.GetModAsync(modItem.ModrinthId);
                     }
 
-                    if (foundMod == null)
+                    // Search by name on Modrinth
+                    if (foundMod == null && !string.IsNullOrEmpty(modItem.SearchQuery))
                     {
                         var mrResults = await _modrinth.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
-                        foundMod = mrResults.FirstOrDefault();
+                        foundMod = mrResults?.FirstOrDefault();
                     }
                 }
                 catch (Exception ex)
@@ -180,7 +205,9 @@ public partial class ModPacksViewModel : ViewModelBase
                     viewModel.Mod = foundMod;
                     viewModel.Status = "Available";
                     viewModel.IsAvailable = true;
-                    viewModel.GameVersions = string.Join(", ", foundMod.GameVersions.Take(5));
+                    viewModel.GameVersions = foundMod.GameVersions != null
+                        ? string.Join(", ", foundMod.GameVersions.Take(5))
+                        : "";
                     ModsFound++;
                 }
                 else
@@ -206,57 +233,67 @@ public partial class ModPacksViewModel : ViewModelBase
     [RelayCommand]
     private async Task InstallPackAsync()
     {
-        // Validate server selection
-        if (_mainViewModel.SelectedProfile == null)
-        {
-            ErrorMessage = "Please select a server profile first! Go to Server Manager to create or select a server.";
-            return;
-        }
-
-        if (SelectedPack == null)
-        {
-            ErrorMessage = "Please select a mod pack first";
-            return;
-        }
-
-        var modsToInstall = PackMods.Where(m => m.IsSelected && m.IsAvailable && m.Mod != null).ToList();
-
-        if (modsToInstall.Count == 0)
-        {
-            ErrorMessage = "No mods selected for installation. Make sure mods are available for the selected version.";
-            return;
-        }
-
-        IsInstalling = true;
-        InstallProgress = 0;
-        ClearMessages();
-
-        var modsFolder = _mainViewModel.SelectedProfile.ModsPath;
-        var gameVersion = _mainViewModel.SelectedProfile.MinecraftVersion;
-        var installed = 0;
-        var failed = 0;
-
         try
         {
+            // Validate server selection
+            var profile = _mainViewModel?.SelectedProfile;
+            if (profile == null)
+            {
+                ErrorMessage = "Please select a server profile first! Go to Server Manager to create or select a server.";
+                return;
+            }
+
+            if (SelectedPack == null)
+            {
+                ErrorMessage = "Please select a mod pack first";
+                return;
+            }
+
+            var modsToInstall = PackMods?.Where(m => m != null && m.IsSelected && m.IsAvailable && m.Mod != null).ToList();
+
+            if (modsToInstall == null || modsToInstall.Count == 0)
+            {
+                ErrorMessage = "No mods selected for installation. Make sure mods are available for the selected version.";
+                return;
+            }
+
+            IsInstalling = true;
+            InstallProgress = 0;
+            ClearMessages();
+
+            var modsFolder = profile.ModsPath;
+            var gameVersion = profile.MinecraftVersion ?? "1.20.1";
+            var installed = 0;
+            var failed = 0;
+
+            if (string.IsNullOrEmpty(modsFolder))
+            {
+                ErrorMessage = "Server mods folder path is not configured";
+                IsInstalling = false;
+                return;
+            }
+
             System.IO.Directory.CreateDirectory(modsFolder);
 
             foreach (var modVm in modsToInstall)
             {
-                if (modVm.Mod == null) continue;
+                if (modVm?.Mod == null) continue;
 
                 var mod = modVm.Mod;
-                InstallStatus = $"Installing {mod.Name} ({installed + failed + 1}/{modsToInstall.Count})...";
+                var modName = mod.Name ?? "Unknown Mod";
+
+                InstallStatus = $"Installing {modName} ({installed + failed + 1}/{modsToInstall.Count})...";
                 modVm.Status = "Installing...";
 
                 try
                 {
                     ModFile? file = null;
 
-                    if (mod.Source == ModSource.CurseForge)
+                    if (mod.Source == ModSource.CurseForge && mod.Id > 0)
                     {
                         file = await _curseForge.GetCompatibleFileAsync(mod.Id, gameVersion);
                     }
-                    else if (mod.Source == ModSource.Modrinth)
+                    else if (mod.Source == ModSource.Modrinth && !string.IsNullOrEmpty(mod.Slug))
                     {
                         file = await _modrinth.GetCompatibleFileAsync(mod.Slug, gameVersion);
                     }
@@ -264,14 +301,14 @@ public partial class ModPacksViewModel : ViewModelBase
                     if (file != null && !string.IsNullOrEmpty(file.DownloadUrl))
                     {
                         // Use queue service for background download
-                        _downloadQueue.EnqueueDownload(mod, gameVersion, modsFolder, _mainViewModel.SelectedProfile);
+                        _downloadQueue.EnqueueDownload(mod, gameVersion, modsFolder, profile);
 
                         modVm.Status = "Queued for download";
                         installed++;
                     }
                     else
                     {
-                        modVm.Status = "No compatible file";
+                        modVm.Status = "No compatible file found";
                         failed++;
                     }
                 }
@@ -279,20 +316,22 @@ public partial class ModPacksViewModel : ViewModelBase
                 {
                     modVm.Status = $"Error: {ex.Message}";
                     failed++;
+                    System.Diagnostics.Debug.WriteLine($"Error installing {modName}: {ex}");
                 }
 
                 InstallProgress = (double)(installed + failed) / modsToInstall.Count * 100;
             }
 
-            if (_mainViewModel.SelectedProfile != null)
+            if (profile != null)
             {
-                await _mainViewModel.SaveProfileAsync(_mainViewModel.SelectedProfile);
+                await _mainViewModel.SaveProfileAsync(profile);
             }
 
+            var packName = SelectedPack?.Name ?? "selected pack";
             if (failed == 0)
             {
                 InstallStatus = $"Queued {installed} mods for download!";
-                StatusMessage = $"Started downloading {SelectedPack.Name} pack";
+                StatusMessage = $"Started downloading {packName}";
             }
             else
             {
@@ -303,6 +342,7 @@ public partial class ModPacksViewModel : ViewModelBase
         catch (Exception ex)
         {
             ErrorMessage = $"Pack installation error: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Pack installation error: {ex}");
         }
         finally
         {

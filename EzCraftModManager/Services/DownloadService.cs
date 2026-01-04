@@ -168,42 +168,70 @@ public class DownloadService
         IProgress<InstallProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
+        if (mod == null || file == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot download: mod or file is null");
+            return false;
+        }
+
+        var modName = mod.Name ?? "Unknown Mod";
+        var fileName = file.FileName ?? "unknown.jar";
+        var downloadUrl = file.DownloadUrl ?? "";
+        var dependencies = file.Dependencies ?? new List<ModDependency>();
+
+        if (string.IsNullOrEmpty(downloadUrl))
+        {
+            System.Diagnostics.Debug.WriteLine($"Cannot download {modName}: no download URL");
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(modsFolder))
+        {
+            System.Diagnostics.Debug.WriteLine($"Cannot download {modName}: no destination folder");
+            return false;
+        }
+
         var installProgress = new InstallProgress
         {
-            CurrentStep = $"Installing {mod.Name}",
-            TotalSteps = 1 + file.Dependencies.Count(d => d.Type == DependencyType.Required)
+            CurrentStep = $"Installing {modName}",
+            TotalSteps = 1 + dependencies.Count(d => d?.Type == DependencyType.Required)
         };
 
         try
         {
+            Directory.CreateDirectory(modsFolder);
+
             // Download main mod
             installProgress.CurrentStepIndex = 1;
-            installProgress.DetailMessage = $"Downloading {mod.Name}...";
+            installProgress.DetailMessage = $"Downloading {modName}...";
             progress?.Report(installProgress);
 
-            var modPath = Path.Combine(modsFolder, file.FileName);
-            await DownloadFileAsync(file.DownloadUrl, modPath, null, cancellationToken);
+            var modPath = Path.Combine(modsFolder, fileName);
+            await DownloadFileAsync(downloadUrl, modPath, null, cancellationToken);
 
             // Download required dependencies
-            var requiredDeps = file.Dependencies.Where(d => d.Type == DependencyType.Required).ToList();
+            var requiredDeps = dependencies.Where(d => d != null && d.Type == DependencyType.Required).ToList();
             var depIndex = 2;
 
             foreach (var dep in requiredDeps)
             {
+                if (dep == null) continue;
+
+                var depName = dep.ModName ?? "Unknown dependency";
                 installProgress.CurrentStepIndex = depIndex++;
-                installProgress.DetailMessage = $"Downloading dependency: {dep.ModName}...";
+                installProgress.DetailMessage = $"Downloading dependency: {depName}...";
                 progress?.Report(installProgress);
 
                 try
                 {
                     // Try to get dependency from CurseForge
-                    if (dep.ModId > 0)
+                    if (dep.ModId > 0 && curseForge != null)
                     {
                         var depMod = await curseForge.GetModAsync(dep.ModId);
                         if (depMod != null)
                         {
-                            var depFile = await curseForge.GetCompatibleFileAsync(dep.ModId, gameVersion);
-                            if (depFile != null && !string.IsNullOrEmpty(depFile.DownloadUrl))
+                            var depFile = await curseForge.GetCompatibleFileAsync(dep.ModId, gameVersion ?? "1.20.1");
+                            if (depFile != null && !string.IsNullOrEmpty(depFile.DownloadUrl) && !string.IsNullOrEmpty(depFile.FileName))
                             {
                                 var depPath = Path.Combine(modsFolder, depFile.FileName);
                                 if (!File.Exists(depPath))
@@ -216,13 +244,13 @@ public class DownloadService
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Error downloading dependency {dep.ModName}: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Error downloading dependency {depName}: {ex.Message}");
                     // Continue with other dependencies
                 }
             }
 
             installProgress.IsComplete = true;
-            installProgress.DetailMessage = $"{mod.Name} installed successfully!";
+            installProgress.DetailMessage = $"{modName} installed successfully!";
             progress?.Report(installProgress);
 
             return true;
@@ -232,6 +260,7 @@ public class DownloadService
             installProgress.HasError = true;
             installProgress.ErrorMessage = ex.Message;
             progress?.Report(installProgress);
+            System.Diagnostics.Debug.WriteLine($"Error downloading {modName}: {ex}");
             return false;
         }
     }
