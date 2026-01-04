@@ -122,12 +122,12 @@
 
                             <Separator Background="{StaticResource SurfaceLightBrush}" Margin="0,12"/>
 
-                            <!-- Downloads Navigation with Live Count Badge -->
+                            <!-- Standalone Downloads Navigation with Live Count Badge -->
                             <Button Style="{StaticResource NavButton}" Command="{Binding NavigateToDownloaderCommand}">
-                                <Grid Width="180">
+                                <Grid Width="200">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="⬇️" FontSize="16" Margin="0,0,12,0"/>
-                                        <TextBlock Text="Downloads" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Standalone Downloads" VerticalAlignment="Center"/>
                                     </StackPanel>
                                     <!-- Active Download Badge -->
                                     <Border HorizontalAlignment="Right" VerticalAlignment="Center"
