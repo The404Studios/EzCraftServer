@@ -87,6 +87,11 @@ public partial class ModBrowserViewModel : ViewModelBase
         _downloadService = new DownloadService();
     }
 
+    public void RefreshGameVersionDisplay()
+    {
+        OnPropertyChanged(nameof(SelectedGameVersion));
+    }
+
     partial void OnSearchQueryChanged(string value)
     {
         // Debounce search
@@ -172,7 +177,7 @@ public partial class ModBrowserViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task LoadPopularAsync()
+    public async Task LoadPopularAsync()
     {
         IsSearching = true;
         SearchResults.Clear();

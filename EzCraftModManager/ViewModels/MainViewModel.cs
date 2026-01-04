@@ -71,7 +71,7 @@ public partial class MainViewModel : ViewModelBase
     {
         // Notify child view models about profile change
         ModPacksViewModel?.UpdateServerSelectionStatus();
-        ModBrowserViewModel?.OnPropertyChanged(nameof(ModBrowserViewModel.SelectedGameVersion));
+        ModBrowserViewModel?.RefreshGameVersionDisplay();
     }
 
     public async Task InitializeAsync()

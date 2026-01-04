@@ -5,7 +5,7 @@ using EzCraftModManager.Services;
 
 namespace EzCraftModManager.ViewModels;
 
-public partial class DownloaderViewModel : ObservableObject
+public partial class DownloaderViewModel : ViewModelBase
 {
     private readonly MainViewModel _mainViewModel;
 
