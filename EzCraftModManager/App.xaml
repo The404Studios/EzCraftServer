@@ -8,10 +8,12 @@
             <!-- Converters -->
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
             <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
             <converters:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter"/>
             <converters:BytesToStringConverter x:Key="BytesToStringConverter"/>
             <converters:NumberFormatConverter x:Key="NumberFormatConverter"/>
+            <converters:DownloadQueueStatusToColorConverter x:Key="DownloadQueueStatusToColorConverter"/>
 
             <!-- Colors -->
             <Color x:Key="PrimaryColor">#7C4DFF</Color>
