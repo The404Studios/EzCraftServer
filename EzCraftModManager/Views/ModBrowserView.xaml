@@ -1,0 +1,244 @@
+<UserControl x:Class="EzCraftModManager.Views.ModBrowserView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1100"
+             Loaded="UserControl_Loaded">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Search Header -->
+        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="Browse Mods" FontSize="24" FontWeight="Bold"
+                           Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Search Box -->
+                    <TextBox Grid.Column="0" Style="{StaticResource ModernTextBox}"
+                             Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,12,0">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Return" Command="{Binding SearchCommand}"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
+
+                    <!-- Version Filter -->
+                    <ComboBox Grid.Column="1" Style="{StaticResource ModernComboBox}"
+                              ItemsSource="{Binding AvailableVersions}"
+                              SelectedItem="{Binding SelectedGameVersion}"
+                              Width="120" Margin="0,0,12,0"/>
+
+                    <!-- Source Filter -->
+                    <ComboBox Grid.Column="2" Style="{StaticResource ModernComboBox}"
+                              ItemsSource="{Binding AvailableSources}"
+                              SelectedItem="{Binding SelectedSource}"
+                              Width="120" Margin="0,0,12,0"/>
+
+                    <!-- Search Button -->
+                    <Button Grid.Column="3" Content="Search" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding SearchCommand}"/>
+                </Grid>
+
+                <!-- Category Filters -->
+                <ItemsControl ItemsSource="{Binding AvailableCategories}" Margin="0,12,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Content="{Binding}" Margin="0,0,8,8"
+                                    Padding="12,6" FontSize="12"
+                                    Command="{Binding DataContext.SearchCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding}" Value="All">
+                                                <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- Results Grid -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Mod List -->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding SearchResults}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource SurfaceBrush}"
+                                    CornerRadius="12" Margin="0,0,12,12" Padding="12"
+                                    Width="280" Cursor="Hand">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Header with icon -->
+                                    <Grid Grid.Row="0" Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="64"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" CornerRadius="8" Width="64" Height="64"
+                                                Background="{StaticResource SurfaceLightBrush}">
+                                            <Image Source="{Binding IconUrl}" Stretch="UniformToFill"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Author}" FontSize="12"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                <TextBlock Text="⬇️" FontSize="10"/>
+                                                <TextBlock Text="{Binding DownloadCount, StringFormat=N0}" FontSize="11"
+                                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="4,0,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- Description -->
+                                    <TextBlock Grid.Row="1" Text="{Binding Summary}"
+                                               FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                               TextWrapping="Wrap" MaxHeight="48"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <!-- Actions -->
+                                    <Grid Grid.Row="2" Margin="0,12,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Source badge -->
+                                        <Border Grid.Column="0" Background="{StaticResource SurfaceLightBrush}"
+                                                CornerRadius="4" Padding="8,4" HorizontalAlignment="Left">
+                                            <TextBlock Text="{Binding Source}" FontSize="10"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        </Border>
+
+                                        <!-- Add button -->
+                                        <Button Grid.Column="1" Content="+ Add" Padding="12,6" FontSize="12"
+                                                Style="{StaticResource PrimaryButton}"
+                                                Command="{Binding DataContext.AddToSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Selected Mods Panel -->
+            <Border Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0">
+                        <TextBlock Text="Selected Mods" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0">
+                            <Run Text="{Binding SelectedMods.Count, Mode=OneWay}"/>
+                            <Run Text=" mods selected"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <ListBox Grid.Row="1" ItemsSource="{Binding SelectedMods}"
+                             Background="Transparent" BorderThickness="0" Margin="0,12">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+
+                                    <Button Grid.Column="1" Content="✕" Padding="6,2"
+                                            Style="{StaticResource SecondaryButton}"
+                                            Command="{Binding DataContext.RemoveFromSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel Grid.Row="2" Margin="0,0,0,8">
+                        <!-- Progress -->
+                        <StackPanel Visibility="{Binding IsDownloading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ProgressBar Value="{Binding DownloadProgress}" Maximum="100"
+                                         Style="{StaticResource ModernProgressBar}" Margin="0,0,0,8"/>
+                            <TextBlock Text="{Binding DownloadStatus}" FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                        </StackPanel>
+
+                        <Button Content="Install Selected" Style="{StaticResource AccentButton}" Margin="0,0,0,8"
+                                Command="{Binding InstallSelectedModsCommand}"
+                                IsEnabled="{Binding SelectedMods.Count}"/>
+
+                        <Button Content="Clear All" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ClearSelectedCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Padding="12" Margin="0,12,0,0">
+            <Grid>
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="{StaticResource ErrorBrush}"
+                           HorizontalAlignment="Right"/>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

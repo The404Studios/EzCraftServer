@@ -1,0 +1,199 @@
+<UserControl x:Class="EzCraftModManager.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1100"
+             Loaded="UserControl_Loaded">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+            <!-- Welcome Header -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Welcome to EzCraft Mod Manager"
+                                   FontSize="28" FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock Text="Easily download and install Minecraft mods, create servers, and manage mod packs"
+                                   FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,8,0,16"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Browse Mods" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
+                                    Command="{Binding OpenModBrowserCommand}"/>
+                            <Button Content="Create Server" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"
+                                    Command="{Binding OpenServerManagerCommand}"/>
+                            <Button Content="Mod Packs" Style="{StaticResource AccentButton}"
+                                    Command="{Binding OpenModPacksCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1" Text="🎮" FontSize="80" Opacity="0.3" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Quick Stats -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,12,0">
+                    <StackPanel>
+                        <TextBlock Text="📊" FontSize="32"/>
+                        <TextBlock Text="{Binding TotalProfiles}" FontSize="36" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}"/>
+                        <TextBlock Text="Server Profiles" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="6,0">
+                    <StackPanel>
+                        <TextBlock Text="📦" FontSize="32"/>
+                        <TextBlock Text="{Binding FeaturedPacks.Count}" FontSize="36" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                        <TextBlock Text="Curated Mod Packs" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource Card}" Margin="12,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="🔥" FontSize="32"/>
+                        <TextBlock Text="{Binding PopularMods.Count}" FontSize="36" FontWeight="Bold" Foreground="{StaticResource WarningBrush}"/>
+                        <TextBlock Text="Trending Mods" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Featured Mod Packs -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Featured Mod Packs" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                    <ItemsControl ItemsSource="{Binding FeaturedPacks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" Rows="1"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource SurfaceLightBrush}"
+                                        CornerRadius="12" Margin="6" Padding="16" Cursor="Hand">
+                                    <Border.InputBindings>
+                                        <MouseBinding MouseAction="LeftClick"
+                                                      Command="{Binding DataContext.QuickInstallPackCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      CommandParameter="{Binding}"/>
+                                    </Border.InputBindings>
+                                    <StackPanel>
+                                        <TextBlock FontSize="32" Margin="0,0,0,8">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Id}" Value="zombie-survival">
+                                                            <Setter Property="Text" Value="🧟"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Id}" Value="guns-weapons">
+                                                            <Setter Property="Text" Value="🔫"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Id}" Value="horror-craft">
+                                                            <Setter Property="Text" Value="👻"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Id}" Value="ultimate-apocalypse">
+                                                            <Setter Property="Text" Value="💀"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="12"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" MaxHeight="40"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock FontSize="11" Foreground="{StaticResource PrimaryBrush}" Margin="0,8,0,0">
+                                            <Run Text="{Binding Mods.Count, Mode=OneWay}"/>
+                                            <Run Text=" mods"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Popular Mods -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <Grid Margin="0,0,0,16">
+                        <TextBlock Text="Trending Mods" FontSize="20" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <Button Content="View All" Style="{StaticResource SecondaryButton}"
+                                HorizontalAlignment="Right" Padding="12,6"
+                                Command="{Binding OpenModBrowserCommand}"/>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding PopularMods}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="4" Rows="2"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource SurfaceLightBrush}"
+                                        CornerRadius="12" Margin="6" Padding="12" Cursor="Hand">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Mod Icon -->
+                                        <Border Grid.Column="0" CornerRadius="8" Width="48" Height="48" Background="{StaticResource SurfaceBrush}">
+                                            <Image Source="{Binding IconUrl}" Stretch="UniformToFill"/>
+                                        </Border>
+
+                                        <!-- Mod Info -->
+                                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}">
+                                                <Run Text="{Binding DownloadCount, StringFormat=N0}"/>
+                                                <Run Text=" downloads"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Loading indicator -->
+                    <TextBlock Text="Loading popular mods..."
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Error Message -->
+            <Border Background="{StaticResource ErrorBrush}" CornerRadius="8" Padding="16"
+                    Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}">
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource TextPrimaryBrush}"/>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
