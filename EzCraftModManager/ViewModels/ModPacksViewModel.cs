@@ -81,11 +81,13 @@ public partial class ModPacksViewModel : ViewModelBase
 
     public void UpdateServerSelectionStatus()
     {
-        HasServerSelected = _mainViewModel.SelectedProfile != null;
-        if (HasServerSelected && _mainViewModel.SelectedProfile != null)
+        var profile = _mainViewModel?.SelectedProfile;
+        HasServerSelected = profile != null;
+
+        if (HasServerSelected && profile != null)
         {
-            ServerSelectionMessage = $"Installing to: {_mainViewModel.SelectedProfile.Name}";
-            SelectedVersion = _mainViewModel.SelectedProfile.MinecraftVersion;
+            ServerSelectionMessage = $"Installing to: {profile.Name ?? "Server"}";
+            SelectedVersion = profile.MinecraftVersion ?? "1.20.1";
         }
         else
         {
@@ -322,7 +324,7 @@ public partial class ModPacksViewModel : ViewModelBase
                 InstallProgress = (double)(installed + failed) / modsToInstall.Count * 100;
             }
 
-            if (profile != null)
+            if (profile != null && _mainViewModel != null)
             {
                 await _mainViewModel.SaveProfileAsync(profile);
             }
@@ -380,7 +382,7 @@ public partial class ModPacksViewModel : ViewModelBase
     [RelayCommand]
     private void GoToServerManager()
     {
-        _mainViewModel.NavigateToServerManagerCommand.Execute(null);
+        _mainViewModel?.NavigateToServerManagerCommand?.Execute(null);
     }
 
     [RelayCommand]

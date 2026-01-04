@@ -358,7 +358,10 @@ public partial class ModBrowserViewModel : ViewModelBase
                 DownloadProgress = (double)completed / totalMods * 100;
             }
 
-            await _mainViewModel.SaveProfileAsync(profile);
+            if (_mainViewModel != null)
+            {
+                await _mainViewModel.SaveProfileAsync(profile);
+            }
 
             SelectedMods.Clear();
             DownloadStatus = $"Successfully installed {completed} mods!";

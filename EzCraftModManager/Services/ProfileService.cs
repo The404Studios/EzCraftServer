@@ -31,6 +31,15 @@ public class ProfileService
             {
                 var json = await File.ReadAllTextAsync(_profilesPath);
                 _cachedProfiles = JsonConvert.DeserializeObject<List<ServerProfile>>(json) ?? new List<ServerProfile>();
+
+                // Ensure all profiles have initialized collections (fix for null after deserialization)
+                foreach (var profile in _cachedProfiles)
+                {
+                    if (profile != null)
+                    {
+                        profile.InstalledMods ??= new List<InstalledMod>();
+                    }
+                }
             }
             else
             {
@@ -54,6 +63,15 @@ public class ProfileService
 
     public async Task SaveProfileAsync(ServerProfile profile)
     {
+        if (profile == null)
+        {
+            System.Diagnostics.Debug.WriteLine("Cannot save null profile");
+            return;
+        }
+
+        // Ensure InstalledMods is never null before saving
+        profile.InstalledMods ??= new List<InstalledMod>();
+
         var profiles = await GetAllProfilesAsync();
 
         var existingIndex = profiles.FindIndex(p => p.Id == profile.Id);
