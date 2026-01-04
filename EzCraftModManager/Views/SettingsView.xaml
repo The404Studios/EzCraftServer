@@ -1,0 +1,186 @@
+<UserControl x:Class="EzCraftModManager.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1100"
+             Loaded="UserControl_Loaded">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="800" HorizontalAlignment="Left">
+            <!-- Header -->
+            <TextBlock Text="Settings" FontSize="28" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,24"/>
+
+            <!-- Java Settings -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Java Configuration" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                    <!-- Java Status -->
+                    <Border Background="{StaticResource SurfaceLightBrush}" CornerRadius="8"
+                            Padding="16" Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" FontSize="32" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="❌"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding JavaInfo.IsInstalled}" Value="True">
+                                                <Setter Property="Text" Value="✅"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <StackPanel Grid.Column="1" Margin="16,0">
+                                <TextBlock Foreground="{StaticResource TextPrimaryBrush}" FontWeight="SemiBold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Java Not Detected"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding JavaInfo.IsInstalled}" Value="True">
+                                                    <Setter Property="Text" Value="Java Detected"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                    <Run Text="Version: "/>
+                                    <Run Text="{Binding JavaInfo.Version, FallbackValue='N/A'}"/>
+                                    <Run Text=" | Compatible: "/>
+                                    <Run Text="{Binding JavaInfo.IsCompatible, FallbackValue='N/A'}"/>
+                                </TextBlock>
+                            </StackPanel>
+
+                            <Button Grid.Column="2" Content="Check Again" Style="{StaticResource SecondaryButton}"
+                                    Command="{Binding CheckJavaCommand}" Padding="16,8"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Custom Java Path -->
+                    <TextBlock Text="Custom Java Path (Optional)" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource ModernTextBox}"
+                                 Text="{Binding JavaPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="Browse" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseJavaPathCommand}" Margin="8,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Download Settings -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Download Settings" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                    <!-- Default Install Path -->
+                    <TextBlock Text="Default Installation Path" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Style="{StaticResource ModernTextBox}"
+                                 Text="{Binding DefaultInstallPath, UpdateSourceTrigger=PropertyChanged}"/>
+                        <Button Grid.Column="1" Content="Browse" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding BrowseDefaultPathCommand}" Margin="8,0,0,0"/>
+                    </Grid>
+
+                    <!-- Concurrent Downloads -->
+                    <TextBlock Text="Max Concurrent Downloads" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <Grid Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                        </Grid.ColumnDefinitions>
+                        <Slider Grid.Column="0" Minimum="1" Maximum="10"
+                                Value="{Binding MaxConcurrentDownloads}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding MaxConcurrentDownloads}"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Auto Download Dependencies -->
+                    <CheckBox Content="Automatically download mod dependencies"
+                              IsChecked="{Binding DownloadDependencies}"
+                              Foreground="{StaticResource TextPrimaryBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Cache Settings -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Cache" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Cache Size" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Text="{Binding CacheSize}" FontSize="24" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="1" Content="Clear Cache" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding ClearCacheCommand}" VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- About -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <TextBlock Text="About" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <TextBlock Text="EzCraft Mod Manager" FontSize="20" FontWeight="Bold"
+                                   Foreground="{StaticResource PrimaryBrush}"/>
+                        <TextBlock Text=" v" Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Bottom" Margin="8,0,0,2"/>
+                        <TextBlock Text="{Binding AppVersion}" Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                    </StackPanel>
+
+                    <TextBlock Text="A modern Minecraft mod manager and server setup utility."
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                    <TextBlock Text="Download mods directly from CurseForge and Modrinth without sketchy websites."
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,16"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <Button Content="Open Data Folder" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding OpenAppDataFolderCommand}"/>
+                        <Button Content="GitHub" Style="{StaticResource SecondaryButton}"
+                                Command="{Binding OpenGitHubCommand}"/>
+                        <Button Content="Discord" Style="{StaticResource PrimaryButton}"
+                                Command="{Binding OpenDiscordCommand}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Made with ❤️ by The404Studios"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,24,0,0"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
