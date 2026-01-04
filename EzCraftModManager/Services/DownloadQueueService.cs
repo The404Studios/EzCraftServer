@@ -136,6 +136,70 @@ public class DownloadQueueService : INotifyPropertyChanged
         TotalFailed = 0;
     }
 
+    /// <summary>
+    /// Retry all failed downloads that haven't exceeded max retries
+    /// </summary>
+    public void RetryFailed()
+    {
+        var toRetry = new System.Collections.Generic.List<QueuedDownload>();
+
+        UpdateOnUIThread(() =>
+        {
+            foreach (var download in FailedDownloads)
+            {
+                if (download.CanRetry)
+                {
+                    toRetry.Add(download);
+                }
+            }
+
+            foreach (var download in toRetry)
+            {
+                FailedDownloads.Remove(download);
+            }
+        });
+
+        foreach (var download in toRetry)
+        {
+            download.RetryCount++;
+            download.Status = DownloadQueueStatus.Queued;
+            download.Progress = 0;
+            download.ErrorMessage = null;
+            download.BytesDownloaded = 0;
+
+            _downloadQueue.Enqueue(download);
+            UpdateOnUIThread(() => ActiveDownloads.Add(download));
+            TotalFailed--;
+        }
+
+        if (toRetry.Count > 0)
+        {
+            _ = ProcessQueueAsync();
+        }
+    }
+
+    /// <summary>
+    /// Retry a specific failed download
+    /// </summary>
+    public void RetryDownload(QueuedDownload download)
+    {
+        if (download == null || !download.CanRetry) return;
+
+        UpdateOnUIThread(() => FailedDownloads.Remove(download));
+
+        download.RetryCount++;
+        download.Status = DownloadQueueStatus.Queued;
+        download.Progress = 0;
+        download.ErrorMessage = null;
+        download.BytesDownloaded = 0;
+
+        _downloadQueue.Enqueue(download);
+        UpdateOnUIThread(() => ActiveDownloads.Add(download));
+        TotalFailed--;
+
+        _ = ProcessQueueAsync();
+    }
+
     private async Task ProcessQueueAsync()
     {
         if (_isProcessing) return;
@@ -371,6 +435,8 @@ public class QueuedDownload : INotifyPropertyChanged
     public DateTime QueuedTime { get; set; }
     public DateTime? StartTime { get; set; }
     public DateTime? CompletedTime { get; set; }
+    public int RetryCount { get; set; }
+    public const int MaxRetries = 2;
 
     private DownloadQueueStatus _status;
     public DownloadQueueStatus Status
@@ -407,13 +473,15 @@ public class QueuedDownload : INotifyPropertyChanged
         set { _errorMessage = value; OnPropertyChanged(); }
     }
 
+    public bool CanRetry => RetryCount < MaxRetries && (Status == DownloadQueueStatus.Failed);
+
     public string StatusText => Status switch
     {
-        DownloadQueueStatus.Queued => "Queued",
+        DownloadQueueStatus.Queued => RetryCount > 0 ? $"Queued (retry {RetryCount})" : "Queued",
         DownloadQueueStatus.Downloading => $"Downloading... {Progress:F0}%",
         DownloadQueueStatus.DownloadingDependencies => "Getting dependencies...",
         DownloadQueueStatus.Completed => "Completed",
-        DownloadQueueStatus.Failed => $"Failed: {ErrorMessage}",
+        DownloadQueueStatus.Failed => CanRetry ? $"Failed (will retry): {ErrorMessage}" : $"Failed: {ErrorMessage}",
         DownloadQueueStatus.Cancelled => "Cancelled",
         _ => "Unknown"
     };
