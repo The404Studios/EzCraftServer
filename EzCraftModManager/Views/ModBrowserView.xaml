@@ -47,18 +47,8 @@
                 <!-- Server Info -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Text" Value="{Binding ServerName}"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
-                                            <Setter Property="Text" Value="No Server Selected"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"
+                                   Text="{Binding ServerName, TargetNullValue='No Server Selected', FallbackValue='No Server Selected'}"/>
                         <Border Background="{StaticResource PrimaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
                                 Visibility="{Binding HasServerSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Text="{Binding ServerGameVersion}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
@@ -350,20 +340,8 @@
                                 <Run Text="{Binding SelectedMods.Count, Mode=OneWay}"/>
                                 <Run Text=" mods selected"/>
                             </TextBlock>
-                            <TextBlock FontSize="12" Margin="8,0,0,0">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
-                                        <Setter Property="Text">
-                                            <Setter.Value>
-                                                <MultiBinding StringFormat="for MC {0}">
-                                                    <Binding Path="SelectedGameVersion"/>
-                                                </MultiBinding>
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <TextBlock FontSize="12" Margin="8,0,0,0" Foreground="{StaticResource AccentBrush}"
+                                       Text="{Binding SelectedGameVersion, StringFormat='for MC {0}'}"/>
                         </StackPanel>
 
                         <!-- Target Server Info -->
