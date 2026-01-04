@@ -111,7 +111,6 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Search Box -->
@@ -123,14 +122,15 @@
                         </TextBox.InputBindings>
                     </TextBox>
 
-                    <!-- Version Filter -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,12,0">
+                    <!-- Filters -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <!-- Version Filter -->
                         <ComboBox Style="{StaticResource ModernComboBox}"
                                   ItemsSource="{Binding AvailableVersions}"
                                   SelectedItem="{Binding SelectedGameVersion}"
-                                  Width="120"/>
+                                  Width="100" Margin="0,0,8,0" ToolTip="Minecraft version"/>
                         <!-- Version Match Indicator -->
-                        <Border Width="24" Height="24" CornerRadius="12" Margin="4,0,0,0" VerticalAlignment="Center">
+                        <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,8,0" VerticalAlignment="Center">
                             <Border.Style>
                                 <Style TargetType="Border">
                                     <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
@@ -164,17 +164,29 @@
                                 </TextBlock.Style>
                             </TextBlock>
                         </Border>
+
+                        <!-- Source Filter -->
+                        <ComboBox Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding AvailableSources}"
+                                  SelectedItem="{Binding SelectedSource}"
+                                  Width="100" Margin="0,0,8,0" ToolTip="Filter by source"/>
+
+                        <!-- Mod Loader Filter -->
+                        <ComboBox Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding AvailableModLoaders}"
+                                  SelectedItem="{Binding SelectedModLoader}"
+                                  Width="90" Margin="0,0,8,0" ToolTip="Filter by mod loader"/>
+
+                        <!-- Sort By -->
+                        <ComboBox Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding AvailableSortOptions}"
+                                  SelectedItem="{Binding SelectedSortBy}"
+                                  Width="100" Margin="0,0,12,0" ToolTip="Sort results by"/>
                     </StackPanel>
 
-                    <!-- Source Filter -->
-                    <ComboBox Grid.Column="2" Style="{StaticResource ModernComboBox}"
-                              ItemsSource="{Binding AvailableSources}"
-                              SelectedItem="{Binding SelectedSource}"
-                              Width="120" Margin="0,0,12,0"/>
-
                     <!-- Search Button -->
-                    <Button Grid.Column="3" Content="Search" Style="{StaticResource PrimaryButton}"
-                            Command="{Binding SearchCommand}"/>
+                    <Button Grid.Column="2" Content="Search" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding SearchCommand}" ToolTip="Search for mods"/>
                 </Grid>
 
                 <!-- Category Filters -->

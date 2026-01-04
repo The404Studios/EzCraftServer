@@ -177,12 +177,26 @@
 
                 <!-- Loading Indicator -->
                 <Border Grid.Row="2" Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        Background="{StaticResource SurfaceBrush}" CornerRadius="8">
+                        Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="40">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="Loading mods..." FontSize="16"
-                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                        <ProgressBar IsIndeterminate="True" Width="200" Margin="0,12,0,0"
+                        <TextBlock Text="🔍" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                        <TextBlock Text="Searching for mods..." FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock HorizontalAlignment="Center" Margin="0,8,0,16"
+                                   Foreground="{StaticResource TextSecondaryBrush}">
+                            <Run Text="Found"/>
+                            <Run Text="{Binding ModsFound, Mode=OneWay}" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                            <Run Text="of"/>
+                            <Run Text="{Binding ModsTotal, Mode=OneWay}" FontWeight="Bold"/>
+                            <Run Text="mods"/>
+                        </TextBlock>
+                        <ProgressBar Width="250" Height="8" Margin="0,0,0,8"
+                                     Value="{Binding ModsFound, Mode=OneWay}"
+                                     Maximum="{Binding ModsTotal, Mode=OneWay}"
                                      Style="{StaticResource ModernProgressBar}"/>
+                        <TextBlock Text="This uses parallel loading for faster results" FontSize="11"
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"
+                                   FontStyle="Italic"/>
                     </StackPanel>
                 </Border>
 

@@ -193,6 +193,48 @@
                 </StackPanel>
             </Border>
 
+            <!-- Quick Tips Section -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
+                <StackPanel>
+                    <TextBlock Text="Quick Tips" FontSize="20" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="{StaticResource SurfaceLightBrush}" CornerRadius="8" Padding="16" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="🖥️" FontSize="24" Margin="0,0,0,8"/>
+                                <TextBlock Text="Create a Server First" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Go to Server Manager to create a new Minecraft server before installing mods."
+                                           FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="{StaticResource SurfaceLightBrush}" CornerRadius="8" Padding="16" Margin="4,0">
+                            <StackPanel>
+                                <TextBlock Text="📦" FontSize="24" Margin="0,0,0,8"/>
+                                <TextBlock Text="Use Mod Packs" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Mod packs contain pre-selected compatible mods for the best experience."
+                                           FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="2" Background="{StaticResource SurfaceLightBrush}" CornerRadius="8" Padding="16" Margin="8,0,0,0">
+                            <StackPanel>
+                                <TextBlock Text="✓" FontSize="24" Margin="0,0,0,8"/>
+                                <TextBlock Text="Match Versions" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="Always ensure the mod version matches your server's Minecraft version."
+                                           FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- Error Message -->
             <Border Background="{StaticResource ErrorBrush}" CornerRadius="8" Padding="16"
                     Visibility="{Binding ErrorMessage, Converter={StaticResource NullToVisibilityConverter}}">
