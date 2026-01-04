@@ -79,17 +79,80 @@ public partial class ModBrowserViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasMoreResults = true;
 
+    [ObservableProperty]
+    private string _versionWarning = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasVersionMismatch;
+
+    // Property to get the server's Minecraft version
+    public string? ServerGameVersion => _mainViewModel?.SelectedProfile?.MinecraftVersion;
+
+    // Property to check if a server is selected
+    public bool HasServerSelected => _mainViewModel?.SelectedProfile != null;
+
+    // Property to get server name
+    public string? ServerName => _mainViewModel?.SelectedProfile?.Name;
+
+    // Check if versions match
+    public bool VersionsMatch => string.IsNullOrEmpty(ServerGameVersion) || ServerGameVersion == SelectedGameVersion;
+
     public ModBrowserViewModel(MainViewModel mainViewModel)
     {
         _mainViewModel = mainViewModel;
         _curseForge = new CurseForgeService();
         _modrinth = new ModrinthService();
         _downloadService = new DownloadService();
+
+        // Auto-sync with server version if profile exists
+        SyncWithServerVersion();
+    }
+
+    /// <summary>
+    /// Sync the selected game version with the server profile's Minecraft version
+    /// </summary>
+    public void SyncWithServerVersion()
+    {
+        var serverVersion = ServerGameVersion;
+        if (!string.IsNullOrEmpty(serverVersion) && AvailableVersions.Contains(serverVersion))
+        {
+            SelectedGameVersion = serverVersion;
+        }
+        UpdateVersionWarning();
     }
 
     public void RefreshGameVersionDisplay()
     {
         OnPropertyChanged(nameof(SelectedGameVersion));
+        OnPropertyChanged(nameof(ServerGameVersion));
+        OnPropertyChanged(nameof(HasServerSelected));
+        OnPropertyChanged(nameof(ServerName));
+        OnPropertyChanged(nameof(VersionsMatch));
+        UpdateVersionWarning();
+    }
+
+    private void UpdateVersionWarning()
+    {
+        if (!HasServerSelected)
+        {
+            VersionWarning = "No server selected - please select a server profile first";
+            HasVersionMismatch = true;
+        }
+        else if (!VersionsMatch)
+        {
+            VersionWarning = $"Warning: Server '{ServerName}' uses Minecraft {ServerGameVersion}, but you're browsing mods for {SelectedGameVersion}. Mods may not be compatible!";
+            HasVersionMismatch = true;
+        }
+        else
+        {
+            VersionWarning = string.Empty;
+            HasVersionMismatch = false;
+        }
+    }
+
+    partial void OnSelectedGameVersionChanged(string value)
+    {
+        UpdateVersionWarning();
     }
 
     partial void OnSearchQueryChanged(string value)
@@ -105,6 +168,13 @@ public partial class ModBrowserViewModel : ViewModelBase
                 await SearchAsync();
             }
         }, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    [RelayCommand]
+    private void SyncVersion()
+    {
+        SyncWithServerVersion();
+        StatusMessage = $"Synced to server version: {SelectedGameVersion}";
     }
 
     [RelayCommand]
@@ -164,7 +234,7 @@ public partial class ModBrowserViewModel : ViewModelBase
             }
 
             HasMoreResults = SearchResults.Count >= 20;
-            StatusMessage = $"Found {SearchResults.Count} mods";
+            StatusMessage = $"Found {SearchResults.Count} mods for Minecraft {SelectedGameVersion}";
         }
         catch (Exception ex)
         {
@@ -198,7 +268,7 @@ public partial class ModBrowserViewModel : ViewModelBase
                 SearchResults.Add(mod);
             }
 
-            StatusMessage = "Showing popular mods";
+            StatusMessage = $"Showing popular mods for Minecraft {SelectedGameVersion}";
         }
         catch (Exception ex)
         {
@@ -293,7 +363,15 @@ public partial class ModBrowserViewModel : ViewModelBase
             var modsFolder = profile.ModsPath;
             if (string.IsNullOrEmpty(modsFolder))
             {
-                ErrorMessage = "Server mods folder path is not configured";
+                ErrorMessage = "Server path is not configured. Please set up your server folder in Server Manager first.";
+                return;
+            }
+
+            // Check version compatibility
+            var serverVersion = profile.MinecraftVersion;
+            if (!string.IsNullOrEmpty(serverVersion) && serverVersion != SelectedGameVersion)
+            {
+                ErrorMessage = $"Cannot install mods: Server '{profile.Name}' uses Minecraft {serverVersion}, but selected mods are for {SelectedGameVersion}. Please sync the version or change the server profile.";
                 return;
             }
 
@@ -303,6 +381,7 @@ public partial class ModBrowserViewModel : ViewModelBase
             var modsList = SelectedMods.Where(m => m != null).ToList();
             var totalMods = modsList.Count;
             var completed = 0;
+            var failed = 0;
             var gameVersion = SelectedGameVersion ?? "1.20.1";
 
             System.IO.Directory.CreateDirectory(modsFolder);
@@ -328,7 +407,14 @@ public partial class ModBrowserViewModel : ViewModelBase
                         file = await _modrinth.GetCompatibleFileAsync(mod.Slug, gameVersion);
                     }
 
-                    if (file != null && !string.IsNullOrEmpty(file.DownloadUrl) && !string.IsNullOrEmpty(file.FileName))
+                    if (file == null || string.IsNullOrEmpty(file.DownloadUrl))
+                    {
+                        DownloadStatus = $"No compatible version found for {modName} on Minecraft {gameVersion}";
+                        failed++;
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(file.DownloadUrl) && !string.IsNullOrEmpty(file.FileName))
                     {
                         var progress = new Progress<DownloadProgress>(p =>
                         {
@@ -342,21 +428,35 @@ public partial class ModBrowserViewModel : ViewModelBase
                         // Update profile
                         if (profile.InstalledMods != null)
                         {
-                            profile.InstalledMods.Add(new InstalledMod
+                            // Check if mod is already installed
+                            var existingMod = profile.InstalledMods.FirstOrDefault(m => m.ModId == mod.Id && m.Source == mod.Source);
+                            if (existingMod != null)
                             {
-                                ModId = mod.Id,
-                                Name = modName,
-                                FileName = file.FileName,
-                                Version = file.DisplayName ?? "",
-                                FilePath = System.IO.Path.Combine(modsFolder, file.FileName),
-                                Source = mod.Source
-                            });
+                                existingMod.FileName = file.FileName;
+                                existingMod.Version = file.DisplayName ?? "";
+                                existingMod.FilePath = System.IO.Path.Combine(modsFolder, file.FileName);
+                                existingMod.InstalledDate = DateTime.Now;
+                            }
+                            else
+                            {
+                                profile.InstalledMods.Add(new InstalledMod
+                                {
+                                    ModId = mod.Id,
+                                    Name = modName,
+                                    FileName = file.FileName,
+                                    Version = file.DisplayName ?? "",
+                                    FilePath = System.IO.Path.Combine(modsFolder, file.FileName),
+                                    Source = mod.Source,
+                                    InstalledDate = DateTime.Now
+                                });
+                            }
                         }
                     }
                 }
                 catch (Exception modEx)
                 {
                     System.Diagnostics.Debug.WriteLine($"Error installing {modName}: {modEx.Message}");
+                    failed++;
                 }
 
                 completed++;
@@ -369,8 +469,17 @@ public partial class ModBrowserViewModel : ViewModelBase
             }
 
             SelectedMods.Clear();
-            DownloadStatus = $"Successfully installed {completed} mods!";
-            StatusMessage = $"Installed {completed} mods to {profile.Name ?? "server"}";
+
+            if (failed > 0)
+            {
+                DownloadStatus = $"Installed {completed - failed} mods, {failed} failed";
+                StatusMessage = $"Installed {completed - failed} mods to {profile.Name ?? "server"}, {failed} failed";
+            }
+            else
+            {
+                DownloadStatus = $"Successfully installed {completed} mods!";
+                StatusMessage = $"Installed {completed} mods to {profile.Name ?? "server"}";
+            }
         }
         catch (Exception ex)
         {
@@ -386,6 +495,21 @@ public partial class ModBrowserViewModel : ViewModelBase
     [RelayCommand]
     private async Task QuickInstallModAsync(ModInfo mod)
     {
+        // Quick validation for quick install
+        var profile = _mainViewModel?.SelectedProfile;
+        if (profile == null)
+        {
+            ErrorMessage = "Please select a server profile first";
+            return;
+        }
+
+        var serverVersion = profile.MinecraftVersion;
+        if (!string.IsNullOrEmpty(serverVersion) && serverVersion != SelectedGameVersion)
+        {
+            ErrorMessage = $"Cannot install: Mod is for Minecraft {SelectedGameVersion}, but server uses {serverVersion}";
+            return;
+        }
+
         AddToSelected(mod);
         await InstallSelectedModsAsync();
     }

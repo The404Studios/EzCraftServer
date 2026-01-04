@@ -72,6 +72,12 @@ public partial class MainViewModel : ViewModelBase
         // Notify child view models about profile change
         ModPacksViewModel?.UpdateServerSelectionStatus();
         ModBrowserViewModel?.RefreshGameVersionDisplay();
+
+        // Auto-sync mod browser version with the selected profile's version
+        if (value != null)
+        {
+            ModBrowserViewModel?.SyncWithServerVersion();
+        }
     }
 
     public async Task InitializeAsync()
