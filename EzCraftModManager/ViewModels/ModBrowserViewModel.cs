@@ -29,6 +29,9 @@ public partial class ModBrowserViewModel : ViewModelBase
     private ModInfo? _selectedMod;
 
     [ObservableProperty]
+    private bool _isDetailsVisible;
+
+    [ObservableProperty]
     private string _searchQuery = string.Empty;
 
     [ObservableProperty]
@@ -379,6 +382,41 @@ public partial class ModBrowserViewModel : ViewModelBase
 
         _mainViewModel?.DownloaderViewModel?.AddToStandaloneCartCommand?.Execute(mod);
         StatusMessage = $"Added '{mod.Name}' to standalone cart";
+    }
+
+    [RelayCommand]
+    private void ShowModDetails(ModInfo? mod)
+    {
+        if (mod == null) return;
+
+        SelectedMod = mod;
+        IsDetailsVisible = true;
+    }
+
+    [RelayCommand]
+    private void CloseDetails()
+    {
+        IsDetailsVisible = false;
+        SelectedMod = null;
+    }
+
+    [RelayCommand]
+    private void OpenModPage()
+    {
+        if (SelectedMod?.WebsiteUrl == null) return;
+
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = SelectedMod.WebsiteUrl,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Could not open page: {ex.Message}";
+        }
     }
 
     [RelayCommand]
