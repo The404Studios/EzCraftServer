@@ -10,15 +10,112 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Server Info Banner -->
+        <Border Grid.Row="0" CornerRadius="8" Padding="12" Margin="0,0,0,12">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasVersionMismatch}" Value="True">
+                            <Setter Property="Background" Value="#3D2F1E"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
+                            <Setter Property="Background" Value="#3D1E1E"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Server Icon -->
+                <Border Grid.Column="0" Background="{StaticResource SurfaceLightBrush}" CornerRadius="6"
+                        Width="40" Height="40" Margin="0,0,12,0">
+                    <TextBlock Text="SERVER" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{StaticResource PrimaryBrush}"/>
+                </Border>
+
+                <!-- Server Info -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="{Binding ServerName}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
+                                            <Setter Property="Text" Value="No Server Selected"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <Border Background="{StaticResource PrimaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
+                                Visibility="{Binding HasServerSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{Binding ServerGameVersion}" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Version Warning -->
+                    <TextBlock Text="{Binding VersionWarning}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding VersionWarning}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
+                                        <Setter Property="Foreground" Value="{StaticResource ErrorBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Sync Button -->
+                <Button Grid.Column="2" Content="Sync Version" Padding="12,8"
+                        Command="{Binding SyncVersionCommand}"
+                        IsEnabled="{Binding HasServerSelected}"
+                        Visibility="{Binding HasVersionMismatch, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+                            <Setter Property="Background" Value="{StaticResource WarningBrush}"/>
+                            <Setter Property="Foreground" Value="#1E1E1E"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </Border>
+
         <!-- Search Header -->
-        <Border Grid.Row="0" Style="{StaticResource Card}" Margin="0,0,0,16">
+        <Border Grid.Row="1" Style="{StaticResource Card}" Margin="0,0,0,16">
             <StackPanel>
-                <TextBlock Text="Browse Mods" FontSize="24" FontWeight="Bold"
-                           Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                <Grid Margin="0,0,0,12">
+                    <TextBlock Text="Browse Mods" FontSize="24" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                               FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                        <Run Text="Browsing mods for Minecraft"/>
+                        <Run Text="{Binding SelectedGameVersion}" FontWeight="SemiBold" Foreground="{StaticResource PrimaryBrush}"/>
+                    </TextBlock>
+                </Grid>
 
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -38,10 +135,47 @@
                     </TextBox>
 
                     <!-- Version Filter -->
-                    <ComboBox Grid.Column="1" Style="{StaticResource ModernComboBox}"
-                              ItemsSource="{Binding AvailableVersions}"
-                              SelectedItem="{Binding SelectedGameVersion}"
-                              Width="120" Margin="0,0,12,0"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,12,0">
+                        <ComboBox Style="{StaticResource ModernComboBox}"
+                                  ItemsSource="{Binding AvailableVersions}"
+                                  SelectedItem="{Binding SelectedGameVersion}"
+                                  Width="120"/>
+                        <!-- Version Match Indicator -->
+                        <Border Width="24" Height="24" CornerRadius="12" Margin="4,0,0,0" VerticalAlignment="Center">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+                                    <Setter Property="ToolTip" Value="Version matches server"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding VersionsMatch}" Value="False">
+                                            <Setter Property="Background" Value="{StaticResource WarningBrush}"/>
+                                            <Setter Property="ToolTip" Value="Version does not match server"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
+                                            <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+                                            <Setter Property="ToolTip" Value="No server selected"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="Bold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="check"/>
+                                        <Setter Property="Foreground" Value="#1E1E1E"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding VersionsMatch}" Value="False">
+                                                <Setter Property="Text" Value="!"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding HasServerSelected}" Value="False">
+                                                <Setter Property="Text" Value="X"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
 
                     <!-- Source Filter -->
                     <ComboBox Grid.Column="2" Style="{StaticResource ModernComboBox}"
@@ -83,89 +217,120 @@
         </Border>
 
         <!-- Results Grid -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="320"/>
             </Grid.ColumnDefinitions>
 
             <!-- Mod List -->
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding SearchResults}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{StaticResource SurfaceBrush}"
-                                    CornerRadius="12" Margin="0,0,12,12" Padding="12"
-                                    Width="280" Cursor="Hand">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
+                <StackPanel>
+                    <!-- Loading Indicator -->
+                    <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20" Margin="0,0,12,12"
+                            Visibility="{Binding IsSearching, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="Searching..." FontSize="16" Foreground="{StaticResource TextPrimaryBrush}"
+                                       HorizontalAlignment="Center"/>
+                            <ProgressBar IsIndeterminate="True" Width="200" Height="4" Margin="0,12,0,0"
+                                         Style="{StaticResource ModernProgressBar}"/>
+                        </StackPanel>
+                    </Border>
 
-                                    <!-- Header with icon -->
-                                    <Grid Grid.Row="0" Margin="0,0,0,12">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="64"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
+                    <ItemsControl ItemsSource="{Binding SearchResults}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource SurfaceBrush}"
+                                        CornerRadius="12" Margin="0,0,12,12" Padding="12"
+                                        Width="280" Cursor="Hand">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource SurfaceLightBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
-                                        <Border Grid.Column="0" CornerRadius="8" Width="64" Height="64"
-                                                Background="{StaticResource SurfaceLightBrush}">
-                                            <Image Source="{Binding IconUrl}" Stretch="UniformToFill"/>
-                                        </Border>
+                                        <!-- Header with icon -->
+                                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="64"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
 
-                                        <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"
-                                                       Foreground="{StaticResource TextPrimaryBrush}"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Author}" FontSize="12"
-                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                                <TextBlock Text="⬇️" FontSize="10"/>
-                                                <TextBlock Text="{Binding DownloadCount, StringFormat=N0}" FontSize="11"
-                                                           Foreground="{StaticResource TextSecondaryBrush}" Margin="4,0,0,0"/>
+                                            <Border Grid.Column="0" CornerRadius="8" Width="64" Height="64"
+                                                    Background="{StaticResource SurfaceLightBrush}">
+                                                <Image Source="{Binding IconUrl}" Stretch="UniformToFill"/>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Author}" FontSize="12"
+                                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Text="DL" FontSize="10" Margin="0,0,4,0"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                    <TextBlock Text="{Binding DownloadCount, StringFormat=N0}" FontSize="11"
+                                                               Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                        </StackPanel>
+                                        </Grid>
+
+                                        <!-- Description -->
+                                        <TextBlock Grid.Row="1" Text="{Binding Summary}"
+                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" MaxHeight="48"
+                                                   TextTrimming="CharacterEllipsis"/>
+
+                                        <!-- Actions -->
+                                        <Grid Grid.Row="2" Margin="0,12,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- Source badge -->
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                                <Border Background="{StaticResource SurfaceLightBrush}"
+                                                        CornerRadius="4" Padding="8,4" HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding Source}" FontSize="10"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <!-- Add button -->
+                                            <Button Grid.Column="1" Content="+ Add" Padding="12,6" FontSize="12"
+                                                    Style="{StaticResource PrimaryButton}"
+                                                    Command="{Binding DataContext.AddToSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </Grid>
                                     </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                                    <!-- Description -->
-                                    <TextBlock Grid.Row="1" Text="{Binding Summary}"
-                                               FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
-                                               TextWrapping="Wrap" MaxHeight="48"
-                                               TextTrimming="CharacterEllipsis"/>
-
-                                    <!-- Actions -->
-                                    <Grid Grid.Row="2" Margin="0,12,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <!-- Source badge -->
-                                        <Border Grid.Column="0" Background="{StaticResource SurfaceLightBrush}"
-                                                CornerRadius="4" Padding="8,4" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding Source}" FontSize="10"
-                                                       Foreground="{StaticResource TextSecondaryBrush}"/>
-                                        </Border>
-
-                                        <!-- Add button -->
-                                        <Button Grid.Column="1" Content="+ Add" Padding="12,6" FontSize="12"
-                                                Style="{StaticResource PrimaryButton}"
-                                                Command="{Binding DataContext.AddToSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"/>
-                                    </Grid>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    <!-- Load More Button -->
+                    <Button Content="Load More" Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Center" Margin="0,8,0,16" Padding="24,10"
+                            Command="{Binding LoadMoreCommand}"
+                            Visibility="{Binding HasMoreResults, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
             </ScrollViewer>
 
             <!-- Selected Mods Panel -->
@@ -178,12 +343,37 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0">
-                        <TextBlock Text="Selected Mods" FontSize="18" FontWeight="SemiBold"
+                        <TextBlock Text="Install Queue" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}"/>
-                        <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0">
-                            <Run Text="{Binding SelectedMods.Count, Mode=OneWay}"/>
-                            <Run Text=" mods selected"/>
-                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}">
+                                <Run Text="{Binding SelectedMods.Count, Mode=OneWay}"/>
+                                <Run Text=" mods selected"/>
+                            </TextBlock>
+                            <TextBlock FontSize="12" Margin="8,0,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                        <Setter Property="Text">
+                                            <Setter.Value>
+                                                <MultiBinding StringFormat="for MC {0}">
+                                                    <Binding Path="SelectedGameVersion"/>
+                                                </MultiBinding>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- Target Server Info -->
+                        <Border Background="{StaticResource SurfaceLightBrush}" CornerRadius="6" Padding="8" Margin="0,8,0,0"
+                                Visibility="{Binding HasServerSelected, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Install to:" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding ServerName}" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
                     <ListBox Grid.Row="1" ItemsSource="{Binding SelectedMods}"
@@ -196,11 +386,15 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
-                                               TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextTrimming="CharacterEllipsis" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Author}" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    </StackPanel>
 
-                                    <Button Grid.Column="1" Content="✕" Padding="6,2"
+                                    <Button Grid.Column="1" Content="X" Padding="8,4"
                                             Style="{StaticResource SecondaryButton}"
                                             Command="{Binding DataContext.RemoveFromSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"/>
@@ -210,17 +404,45 @@
                     </ListBox>
 
                     <StackPanel Grid.Row="2" Margin="0,0,0,8">
+                        <!-- Version Mismatch Warning -->
+                        <Border Background="#3D2F1E" CornerRadius="6" Padding="10" Margin="0,0,0,8"
+                                Visibility="{Binding HasVersionMismatch, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="Version Mismatch!" FontWeight="SemiBold" FontSize="12"
+                                           Foreground="{StaticResource WarningBrush}"/>
+                                <TextBlock Text="Sync version before installing" FontSize="11"
+                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Progress -->
-                        <StackPanel Visibility="{Binding IsDownloading, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Visibility="{Binding IsDownloading, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Margin="0,0,0,8">
                             <ProgressBar Value="{Binding DownloadProgress}" Maximum="100"
                                          Style="{StaticResource ModernProgressBar}" Margin="0,0,0,8"/>
                             <TextBlock Text="{Binding DownloadStatus}" FontSize="12"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                         </StackPanel>
 
-                        <Button Content="Install Selected" Style="{StaticResource AccentButton}" Margin="0,0,0,8"
-                                Command="{Binding InstallSelectedModsCommand}"
-                                IsEnabled="{Binding SelectedMods.Count}"/>
+                        <Button Content="Install Selected" Margin="0,0,0,8"
+                                Command="{Binding InstallSelectedModsCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource AccentButton}">
+                                    <Setter Property="IsEnabled" Value="True"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedMods.Count}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding HasVersionMismatch}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsDownloading}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
 
                         <Button Content="Clear All" Style="{StaticResource SecondaryButton}"
                                 Command="{Binding ClearSelectedCommand}"/>
@@ -230,14 +452,14 @@
         </Grid>
 
         <!-- Status Bar -->
-        <Border Grid.Row="2" Background="{StaticResource SurfaceBrush}"
+        <Border Grid.Row="3" Background="{StaticResource SurfaceBrush}"
                 CornerRadius="8" Padding="12" Margin="0,12,0,0">
             <Grid>
                 <TextBlock Text="{Binding StatusMessage}"
                            Foreground="{StaticResource TextSecondaryBrush}"/>
                 <TextBlock Text="{Binding ErrorMessage}"
                            Foreground="{StaticResource ErrorBrush}"
-                           HorizontalAlignment="Right"/>
+                           HorizontalAlignment="Right" TextWrapping="Wrap" MaxWidth="400"/>
             </Grid>
         </Border>
     </Grid>
