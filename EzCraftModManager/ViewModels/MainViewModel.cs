@@ -28,6 +28,12 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty]
     private JavaInfo? _javaInfo;
 
+    [ObservableProperty]
+    private bool _showDownloadQueue;
+
+    // Download Queue Service for UI binding
+    public DownloadQueueService DownloadQueue => DownloadQueueService.Instance;
+
     // Child ViewModels
     public HomeViewModel HomeViewModel { get; }
     public ModBrowserViewModel ModBrowserViewModel { get; }
@@ -48,6 +54,22 @@ public partial class MainViewModel : ViewModelBase
         SettingsViewModel = new SettingsViewModel(this);
 
         CurrentView = HomeViewModel;
+
+        // Subscribe to download queue changes
+        DownloadQueue.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(DownloadQueue.IsActive))
+            {
+                OnPropertyChanged(nameof(DownloadQueue));
+            }
+        };
+    }
+
+    partial void OnSelectedProfileChanged(ServerProfile? value)
+    {
+        // Notify child view models about profile change
+        ModPacksViewModel?.UpdateServerSelectionStatus();
+        ModBrowserViewModel?.OnPropertyChanged(nameof(ModBrowserViewModel.SelectedGameVersion));
     }
 
     public async Task InitializeAsync()
@@ -109,6 +131,7 @@ public partial class MainViewModel : ViewModelBase
     [RelayCommand]
     private void NavigateToModPacks()
     {
+        ModPacksViewModel.UpdateServerSelectionStatus();
         CurrentView = ModPacksViewModel;
         CurrentViewName = "Mod Packs";
     }
@@ -118,6 +141,24 @@ public partial class MainViewModel : ViewModelBase
     {
         CurrentView = SettingsViewModel;
         CurrentViewName = "Settings";
+    }
+
+    [RelayCommand]
+    private void ToggleDownloadQueue()
+    {
+        ShowDownloadQueue = !ShowDownloadQueue;
+    }
+
+    [RelayCommand]
+    private void ClearCompletedDownloads()
+    {
+        DownloadQueue.ClearCompleted();
+    }
+
+    [RelayCommand]
+    private void CancelAllDownloads()
+    {
+        DownloadQueue.CancelAll();
     }
 
     [RelayCommand]

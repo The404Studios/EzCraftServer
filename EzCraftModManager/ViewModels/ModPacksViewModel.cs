@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using EzCraftModManager.Models;
@@ -14,7 +15,7 @@ public partial class ModPacksViewModel : ViewModelBase
     private readonly MainViewModel _mainViewModel;
     private readonly CurseForgeService _curseForge;
     private readonly ModrinthService _modrinth;
-    private readonly DownloadService _downloadService;
+    private readonly DownloadQueueService _downloadQueue;
 
     [ObservableProperty]
     private ObservableCollection<ModPack> _modPacks = new();
@@ -40,17 +41,55 @@ public partial class ModPacksViewModel : ViewModelBase
     [ObservableProperty]
     private int _modsTotal;
 
+    [ObservableProperty]
+    private string _selectedVersion = "1.20.1";
+
+    [ObservableProperty]
+    private ObservableCollection<string> _availableVersions = new()
+    {
+        "1.21.4", "1.21.3", "1.21.1", "1.21",
+        "1.20.6", "1.20.4", "1.20.2", "1.20.1", "1.20",
+        "1.19.4", "1.19.3", "1.19.2", "1.19.1", "1.19",
+        "1.18.2", "1.18.1", "1.18",
+        "1.17.1", "1.17",
+        "1.16.5", "1.16.4", "1.16.3", "1.16.2", "1.16.1",
+        "1.15.2", "1.14.4", "1.12.2", "1.7.10"
+    };
+
+    [ObservableProperty]
+    private bool _hasServerSelected;
+
+    [ObservableProperty]
+    private string _serverSelectionMessage = "Please select a server profile to install mods";
+
     public ModPacksViewModel(MainViewModel mainViewModel)
     {
         _mainViewModel = mainViewModel;
         _curseForge = new CurseForgeService();
         _modrinth = new ModrinthService();
-        _downloadService = new DownloadService();
+        _downloadQueue = DownloadQueueService.Instance;
 
         // Load curated packs
         foreach (var pack in CuratedModPacks.AllPacks)
         {
             ModPacks.Add(pack);
+        }
+
+        // Update server selection status
+        UpdateServerSelectionStatus();
+    }
+
+    public void UpdateServerSelectionStatus()
+    {
+        HasServerSelected = _mainViewModel.SelectedProfile != null;
+        if (HasServerSelected && _mainViewModel.SelectedProfile != null)
+        {
+            ServerSelectionMessage = $"Installing to: {_mainViewModel.SelectedProfile.Name}";
+            SelectedVersion = _mainViewModel.SelectedProfile.MinecraftVersion;
+        }
+        else
+        {
+            ServerSelectionMessage = "Please select a server profile to install mods";
         }
     }
 
@@ -60,6 +99,20 @@ public partial class ModPacksViewModel : ViewModelBase
         {
             Task.Run(() => LoadPackModsAsync(value));
         }
+        else
+        {
+            Application.Current?.Dispatcher?.Invoke(() => PackMods.Clear());
+            ModsFound = 0;
+            ModsTotal = 0;
+        }
+    }
+
+    partial void OnSelectedVersionChanged(string value)
+    {
+        if (SelectedPack != null && !string.IsNullOrEmpty(value))
+        {
+            Task.Run(() => LoadPackModsAsync(SelectedPack));
+        }
     }
 
     private async Task LoadPackModsAsync(ModPack pack)
@@ -67,12 +120,13 @@ public partial class ModPacksViewModel : ViewModelBase
         IsLoading = true;
         ModsFound = 0;
         ModsTotal = pack.Mods.Count;
+        ClearMessages();
 
         try
         {
-            var gameVersion = _mainViewModel.SelectedProfile?.MinecraftVersion ?? pack.RecommendedMinecraftVersion;
+            var gameVersion = SelectedVersion;
 
-            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => PackMods.Clear());
+            await Application.Current.Dispatcher.InvokeAsync(() => PackMods.Clear());
 
             foreach (var modItem in pack.Mods)
             {
@@ -85,28 +139,40 @@ public partial class ModPacksViewModel : ViewModelBase
                     Status = "Searching..."
                 };
 
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => PackMods.Add(viewModel));
+                await Application.Current.Dispatcher.InvokeAsync(() => PackMods.Add(viewModel));
 
                 // Search for mod
                 ModInfo? foundMod = null;
 
-                // Try CurseForge first
-                if (modItem.CurseForgeId.HasValue)
+                try
                 {
-                    foundMod = await _curseForge.GetModAsync(modItem.CurseForgeId.Value);
-                }
+                    // Try CurseForge first
+                    if (modItem.CurseForgeId.HasValue)
+                    {
+                        foundMod = await _curseForge.GetModAsync(modItem.CurseForgeId.Value);
+                    }
 
-                if (foundMod == null)
-                {
-                    var cfResults = await _curseForge.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
-                    foundMod = cfResults.FirstOrDefault();
-                }
+                    if (foundMod == null)
+                    {
+                        var cfResults = await _curseForge.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
+                        foundMod = cfResults.FirstOrDefault();
+                    }
 
-                // Try Modrinth if not found on CurseForge
-                if (foundMod == null)
+                    // Try Modrinth if not found on CurseForge
+                    if (foundMod == null && !string.IsNullOrEmpty(modItem.ModrinthId))
+                    {
+                        foundMod = await _modrinth.GetModAsync(modItem.ModrinthId);
+                    }
+
+                    if (foundMod == null)
+                    {
+                        var mrResults = await _modrinth.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
+                        foundMod = mrResults.FirstOrDefault();
+                    }
+                }
+                catch (Exception ex)
                 {
-                    var mrResults = await _modrinth.SearchModsAsync(modItem.SearchQuery, gameVersion, 5);
-                    foundMod = mrResults.FirstOrDefault();
+                    System.Diagnostics.Debug.WriteLine($"Error searching for {modItem.SearchQuery}: {ex.Message}");
                 }
 
                 if (foundMod != null)
@@ -114,12 +180,14 @@ public partial class ModPacksViewModel : ViewModelBase
                     viewModel.Mod = foundMod;
                     viewModel.Status = "Available";
                     viewModel.IsAvailable = true;
+                    viewModel.GameVersions = string.Join(", ", foundMod.GameVersions.Take(5));
                     ModsFound++;
                 }
                 else
                 {
-                    viewModel.Status = "Not found for this version";
+                    viewModel.Status = $"Not found for {gameVersion}";
                     viewModel.IsAvailable = false;
+                    viewModel.IsSelected = false;
                 }
             }
 
@@ -138,9 +206,16 @@ public partial class ModPacksViewModel : ViewModelBase
     [RelayCommand]
     private async Task InstallPackAsync()
     {
+        // Validate server selection
         if (_mainViewModel.SelectedProfile == null)
         {
-            ErrorMessage = "Please select or create a server profile first";
+            ErrorMessage = "Please select a server profile first! Go to Server Manager to create or select a server.";
+            return;
+        }
+
+        if (SelectedPack == null)
+        {
+            ErrorMessage = "Please select a mod pack first";
             return;
         }
 
@@ -148,22 +223,29 @@ public partial class ModPacksViewModel : ViewModelBase
 
         if (modsToInstall.Count == 0)
         {
-            ErrorMessage = "No mods selected for installation";
+            ErrorMessage = "No mods selected for installation. Make sure mods are available for the selected version.";
             return;
         }
 
         IsInstalling = true;
         InstallProgress = 0;
+        ClearMessages();
+
         var modsFolder = _mainViewModel.SelectedProfile.ModsPath;
         var gameVersion = _mainViewModel.SelectedProfile.MinecraftVersion;
         var installed = 0;
+        var failed = 0;
 
         try
         {
+            System.IO.Directory.CreateDirectory(modsFolder);
+
             foreach (var modVm in modsToInstall)
             {
-                var mod = modVm.Mod!;
-                InstallStatus = $"Installing {mod.Name} ({installed + 1}/{modsToInstall.Count})...";
+                if (modVm.Mod == null) continue;
+
+                var mod = modVm.Mod;
+                InstallStatus = $"Installing {mod.Name} ({installed + failed + 1}/{modsToInstall.Count})...";
                 modVm.Status = "Installing...";
 
                 try
@@ -181,39 +263,42 @@ public partial class ModPacksViewModel : ViewModelBase
 
                     if (file != null && !string.IsNullOrEmpty(file.DownloadUrl))
                     {
-                        await _downloadService.DownloadModWithDependenciesAsync(
-                            mod, file, modsFolder, _curseForge, _modrinth, gameVersion);
+                        // Use queue service for background download
+                        _downloadQueue.EnqueueDownload(mod, gameVersion, modsFolder, _mainViewModel.SelectedProfile);
 
-                        _mainViewModel.SelectedProfile.InstalledMods.Add(new InstalledMod
-                        {
-                            ModId = mod.Id,
-                            Name = mod.Name,
-                            FileName = file.FileName,
-                            Version = file.DisplayName,
-                            FilePath = System.IO.Path.Combine(modsFolder, file.FileName),
-                            Source = mod.Source
-                        });
-
-                        modVm.Status = "Installed!";
+                        modVm.Status = "Queued for download";
                         installed++;
                     }
                     else
                     {
-                        modVm.Status = "No compatible file found";
+                        modVm.Status = "No compatible file";
+                        failed++;
                     }
                 }
                 catch (Exception ex)
                 {
                     modVm.Status = $"Error: {ex.Message}";
+                    failed++;
                 }
 
-                InstallProgress = (double)(installed + 1) / modsToInstall.Count * 100;
+                InstallProgress = (double)(installed + failed) / modsToInstall.Count * 100;
             }
 
-            await _mainViewModel.SaveProfileAsync(_mainViewModel.SelectedProfile);
+            if (_mainViewModel.SelectedProfile != null)
+            {
+                await _mainViewModel.SaveProfileAsync(_mainViewModel.SelectedProfile);
+            }
 
-            InstallStatus = $"Successfully installed {installed}/{modsToInstall.Count} mods!";
-            StatusMessage = $"Installed {SelectedPack?.Name} pack to {_mainViewModel.SelectedProfile.Name}";
+            if (failed == 0)
+            {
+                InstallStatus = $"Queued {installed} mods for download!";
+                StatusMessage = $"Started downloading {SelectedPack.Name} pack";
+            }
+            else
+            {
+                InstallStatus = $"Queued {installed} mods, {failed} failed";
+                ErrorMessage = $"{failed} mod(s) could not be installed";
+            }
         }
         catch (Exception ex)
         {
@@ -251,6 +336,21 @@ public partial class ModPacksViewModel : ViewModelBase
             mod.IsSelected = false;
         }
     }
+
+    [RelayCommand]
+    private void GoToServerManager()
+    {
+        _mainViewModel.NavigateToServerManagerCommand.Execute(null);
+    }
+
+    [RelayCommand]
+    private async Task RefreshPackAsync()
+    {
+        if (SelectedPack != null)
+        {
+            await LoadPackModsAsync(SelectedPack);
+        }
+    }
 }
 
 public partial class ModPackItemViewModel : ObservableObject
@@ -275,4 +375,12 @@ public partial class ModPackItemViewModel : ObservableObject
 
     [ObservableProperty]
     private ModInfo? _mod;
+
+    [ObservableProperty]
+    private string _gameVersions = string.Empty;
+
+    public string DisplayName => Mod?.Name ?? SearchQuery;
+    public string IconUrl => Mod?.IconUrl ?? string.Empty;
+    public string DownloadCountText => Mod != null ? $"{Mod.DownloadCount:N0} downloads" : "";
+    public string SourceText => Mod?.Source.ToString() ?? "";
 }
