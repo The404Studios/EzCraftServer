@@ -303,6 +303,7 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
                                             <!-- Source badge -->
@@ -314,9 +315,17 @@
                                                 </Border>
                                             </StackPanel>
 
+                                            <!-- Standalone button -->
+                                            <Button Grid.Column="1" Content="⬇️" Padding="8,6" FontSize="12" Margin="0,0,6,0"
+                                                    Style="{StaticResource SecondaryButton}"
+                                                    ToolTip="Add to standalone downloads cart"
+                                                    Command="{Binding DataContext.AddToStandaloneCartCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
+
                                             <!-- Add button -->
-                                            <Button Grid.Column="1" Content="+ Add" Padding="12,6" FontSize="12"
+                                            <Button Grid.Column="2" Content="+ Add" Padding="12,6" FontSize="12"
                                                     Style="{StaticResource PrimaryButton}"
+                                                    ToolTip="Add to server install queue"
                                                     Command="{Binding DataContext.AddToSelectedCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"/>
                                         </Grid>

@@ -373,6 +373,15 @@ public partial class ModBrowserViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void AddToStandaloneCart(ModInfo? mod)
+    {
+        if (mod == null) return;
+
+        _mainViewModel?.DownloaderViewModel?.AddToStandaloneCartCommand?.Execute(mod);
+        StatusMessage = $"Added '{mod.Name}' to standalone cart";
+    }
+
+    [RelayCommand]
     private async Task InstallSelectedModsAsync()
     {
         try
