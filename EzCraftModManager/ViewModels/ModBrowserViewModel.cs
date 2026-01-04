@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -251,13 +252,15 @@ public partial class ModBrowserViewModel : ViewModelBase
     {
         IsSearching = true;
         SearchResults.Clear();
+        ClearMessages();
 
         try
         {
-            var cfMods = await _curseForge.GetPopularModsAsync(SelectedGameVersion, 15);
-            var mrMods = await _modrinth.GetPopularModsAsync(SelectedGameVersion, 15);
+            var cfMods = await _curseForge.GetPopularModsAsync(SelectedGameVersion, 15) ?? new List<ModInfo>();
+            var mrMods = await _modrinth.GetPopularModsAsync(SelectedGameVersion, 15) ?? new List<ModInfo>();
 
             var allMods = cfMods.Concat(mrMods)
+                .Where(m => m != null && !string.IsNullOrEmpty(m.Name))
                 .GroupBy(m => m.Name.ToLower().Replace(" ", ""))
                 .Select(g => g.First())
                 .OrderByDescending(m => m.DownloadCount)
@@ -268,11 +271,19 @@ public partial class ModBrowserViewModel : ViewModelBase
                 SearchResults.Add(mod);
             }
 
-            StatusMessage = $"Showing popular mods for Minecraft {SelectedGameVersion}";
+            if (SearchResults.Count > 0)
+            {
+                StatusMessage = $"Showing {SearchResults.Count} popular mods for Minecraft {SelectedGameVersion}";
+            }
+            else
+            {
+                StatusMessage = $"No mods found for Minecraft {SelectedGameVersion}. Try a different version.";
+            }
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Error loading popular mods: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Error in LoadPopularAsync: {ex}");
         }
         finally
         {

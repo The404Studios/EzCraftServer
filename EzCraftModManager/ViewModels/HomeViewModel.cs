@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -50,22 +51,45 @@ public partial class HomeViewModel : ViewModelBase
         IsLoading = true;
         try
         {
-            // Load popular mods from CurseForge
-            var popular = await _curseForge.GetPopularModsAsync("1.20.1", 8);
-            PopularMods.Clear();
-            foreach (var mod in popular)
+            // Load popular mods from CurseForge with better error handling
+            try
             {
-                PopularMods.Add(mod);
+                var popular = await _curseForge.GetPopularModsAsync("1.20.1", 8);
+                PopularMods.Clear();
+                if (popular != null)
+                {
+                    foreach (var mod in popular)
+                    {
+                        if (mod != null)
+                        {
+                            PopularMods.Add(mod);
+                        }
+                    }
+                }
+            }
+            catch (Exception apiEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading popular mods: {apiEx.Message}");
+                // Don't fail completely if API call fails - app can still work
             }
 
-            // Update stats
-            TotalProfiles = _mainViewModel.Profiles.Count;
+            // Update stats with null checks
+            TotalProfiles = _mainViewModel?.Profiles?.Count ?? 0;
+            TotalInstalledMods = _mainViewModel?.Profiles?.Sum(p => p.InstalledMods?.Count ?? 0) ?? 0;
 
-            StatusMessage = $"Loaded {PopularMods.Count} popular mods";
+            if (PopularMods.Count > 0)
+            {
+                StatusMessage = $"Loaded {PopularMods.Count} popular mods";
+            }
+            else
+            {
+                StatusMessage = "Welcome! Create a server to get started.";
+            }
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Error loading home: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"Error in HomeViewModel.LoadAsync: {ex}");
         }
         finally
         {
@@ -76,25 +100,27 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void OpenModBrowser()
     {
-        _mainViewModel.NavigateToModBrowserCommand.Execute(null);
+        _mainViewModel?.NavigateToModBrowserCommand?.Execute(null);
     }
 
     [RelayCommand]
     private void OpenServerManager()
     {
-        _mainViewModel.NavigateToServerManagerCommand.Execute(null);
+        _mainViewModel?.NavigateToServerManagerCommand?.Execute(null);
     }
 
     [RelayCommand]
     private void OpenModPacks()
     {
-        _mainViewModel.NavigateToModPacksCommand.Execute(null);
+        _mainViewModel?.NavigateToModPacksCommand?.Execute(null);
     }
 
     [RelayCommand]
-    private async Task QuickInstallPackAsync(ModPack pack)
+    private async Task QuickInstallPackAsync(ModPack? pack)
     {
+        if (pack == null || _mainViewModel?.ModPacksViewModel == null) return;
+
         _mainViewModel.ModPacksViewModel.SelectedPack = pack;
-        _mainViewModel.NavigateToModPacksCommand.Execute(null);
+        _mainViewModel.NavigateToModPacksCommand?.Execute(null);
     }
 }
