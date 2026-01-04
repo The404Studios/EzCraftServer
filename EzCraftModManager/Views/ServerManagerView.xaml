@@ -191,7 +191,8 @@
                                                     CommandParameter="{Binding}"/>
                                             <Button Content="📁" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                                                     Padding="12,8" FontSize="12"
-                                                    Command="{Binding DataContext.OpenServerFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    Command="{Binding DataContext.OpenServerFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"/>
                                             <Button Content="🗑" Style="{StaticResource SecondaryButton}"
                                                     Padding="12,8" FontSize="12"
                                                     Command="{Binding DataContext.DeleteServerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
