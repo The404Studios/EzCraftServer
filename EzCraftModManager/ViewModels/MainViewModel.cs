@@ -40,6 +40,7 @@ public partial class MainViewModel : ViewModelBase
     public ServerManagerViewModel ServerManagerViewModel { get; }
     public ModPacksViewModel ModPacksViewModel { get; }
     public SettingsViewModel SettingsViewModel { get; }
+    public DownloaderViewModel DownloaderViewModel { get; }
 
     public MainViewModel()
     {
@@ -52,6 +53,7 @@ public partial class MainViewModel : ViewModelBase
         ServerManagerViewModel = new ServerManagerViewModel(this);
         ModPacksViewModel = new ModPacksViewModel(this);
         SettingsViewModel = new SettingsViewModel(this);
+        DownloaderViewModel = new DownloaderViewModel(this);
 
         CurrentView = HomeViewModel;
 
@@ -144,9 +146,23 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void NavigateToDownloader()
+    {
+        CurrentView = DownloaderViewModel;
+        CurrentViewName = "Downloads";
+        ShowDownloadQueue = false; // Close side panel when viewing full page
+    }
+
+    [RelayCommand]
     private void ToggleDownloadQueue()
     {
         ShowDownloadQueue = !ShowDownloadQueue;
+    }
+
+    [RelayCommand]
+    private void RetryAllFailed()
+    {
+        DownloadQueue.RetryFailed();
     }
 
     [RelayCommand]

@@ -119,6 +119,25 @@
                                     <TextBlock Text="Settings" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+
+                            <Separator Background="{StaticResource SurfaceLightBrush}" Margin="0,12"/>
+
+                            <!-- Downloads Navigation with Live Count Badge -->
+                            <Button Style="{StaticResource NavButton}" Command="{Binding NavigateToDownloaderCommand}">
+                                <Grid Width="180">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⬇️" FontSize="16" Margin="0,0,12,0"/>
+                                        <TextBlock Text="Downloads" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                    <!-- Active Download Badge -->
+                                    <Border HorizontalAlignment="Right" VerticalAlignment="Center"
+                                            Background="{StaticResource AccentBrush}" CornerRadius="10" Padding="8,2"
+                                            Visibility="{Binding DownloadQueue.IsActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBlock Text="{Binding DownloadQueue.ActiveDownloads.Count}" FontSize="10"
+                                                   FontWeight="Bold" Foreground="#1E1E1E"/>
+                                    </Border>
+                                </Grid>
+                            </Button>
                         </StackPanel>
 
                         <!-- Download Queue Button -->
@@ -187,6 +206,9 @@
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
                                 <views:SettingsView/>
+                            </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:DownloaderViewModel}">
+                                <views:DownloaderView/>
                             </DataTemplate>
                         </ContentControl.Resources>
                     </ContentControl>
