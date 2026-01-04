@@ -99,10 +99,10 @@
                     <TextBlock Text="{Binding SelectedPack.Description}" FontSize="14"
                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Spacing="12">
-                        <Button Content="Select All" Style="{StaticResource SecondaryButton}"
+                    <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                        <Button Content="Select All" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"
                                 Command="{Binding SelectAllModsCommand}" Padding="12,6"/>
-                        <Button Content="Required Only" Style="{StaticResource SecondaryButton}"
+                        <Button Content="Required Only" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"
                                 Command="{Binding SelectRequiredOnlyCommand}" Padding="12,6"/>
                         <Button Content="Deselect All" Style="{StaticResource SecondaryButton}"
                                 Command="{Binding DeselectAllModsCommand}" Padding="12,6"/>
@@ -146,7 +146,7 @@
                                         <!-- Info -->
                                         <StackPanel Grid.Column="2" Margin="12,0" VerticalAlignment="Center">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="{Binding Mod.Name, FallbackValue={Binding SearchQuery}}"
+                                                <TextBlock Text="{Binding Mod.Name, TargetNullValue=Unknown}"
                                                            FontWeight="SemiBold"
                                                            Foreground="{StaticResource TextPrimaryBrush}"/>
                                                 <Border Background="{StaticResource WarningBrush}"

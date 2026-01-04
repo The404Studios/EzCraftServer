@@ -69,7 +69,7 @@
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding}" Value="{Binding DataContext.SelectedCategory, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                            <DataTrigger Binding="{Binding}" Value="All">
                                                 <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -209,7 +209,7 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
 
-                    <StackPanel Grid.Row="2" Spacing="8">
+                    <StackPanel Grid.Row="2" Margin="0,0,0,8">
                         <!-- Progress -->
                         <StackPanel Visibility="{Binding IsDownloading, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <ProgressBar Value="{Binding DownloadProgress}" Maximum="100"
@@ -218,7 +218,7 @@
                                        Foreground="{StaticResource TextSecondaryBrush}"/>
                         </StackPanel>
 
-                        <Button Content="Install Selected" Style="{StaticResource AccentButton}"
+                        <Button Content="Install Selected" Style="{StaticResource AccentButton}" Margin="0,0,0,8"
                                 Command="{Binding InstallSelectedModsCommand}"
                                 IsEnabled="{Binding SelectedMods.Count}"/>
 

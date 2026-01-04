@@ -167,10 +167,10 @@
                     <TextBlock Text="Download mods directly from CurseForge and Modrinth without sketchy websites."
                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,16"/>
 
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <Button Content="Open Data Folder" Style="{StaticResource SecondaryButton}"
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Open Data Folder" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"
                                 Command="{Binding OpenAppDataFolderCommand}"/>
-                        <Button Content="GitHub" Style="{StaticResource SecondaryButton}"
+                        <Button Content="GitHub" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"
                                 Command="{Binding OpenGitHubCommand}"/>
                         <Button Content="Discord" Style="{StaticResource PrimaryButton}"
                                 Command="{Binding OpenDiscordCommand}"/>

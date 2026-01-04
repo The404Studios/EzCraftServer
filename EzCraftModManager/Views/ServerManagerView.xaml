@@ -184,12 +184,12 @@
                                             </TextBlock>
                                         </StackPanel>
 
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                            <Button Content="▶" Style="{StaticResource AccentButton}"
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                            <Button Content="▶" Style="{StaticResource AccentButton}" Margin="0,0,8,0"
                                                     Padding="12,8" FontSize="12"
                                                     Command="{Binding DataContext.StartServerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"/>
-                                            <Button Content="📁" Style="{StaticResource SecondaryButton}"
+                                            <Button Content="📁" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                                                     Padding="12,8" FontSize="12"
                                                     Command="{Binding DataContext.OpenServerFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
                                             <Button Content="🗑" Style="{StaticResource SecondaryButton}"
@@ -216,8 +216,8 @@
                     <Grid Grid.Row="0" Margin="0,0,0,12">
                         <TextBlock Text="Installed Mods" FontSize="18" FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
-                            <Button Content="Refresh" Style="{StaticResource SecondaryButton}"
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Refresh" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                                     Command="{Binding RefreshInstalledModsCommand}" Padding="12,6"/>
                             <Button Content="Open Mods Folder" Style="{StaticResource SecondaryButton}"
                                     Command="{Binding OpenModsFolderCommand}" Padding="12,6"/>

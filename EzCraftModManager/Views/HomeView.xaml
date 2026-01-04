@@ -8,9 +8,9 @@
              Loaded="UserControl_Loaded">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Spacing="24">
+        <StackPanel>
             <!-- Welcome Header -->
-            <Border Style="{StaticResource Card}">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -25,10 +25,10 @@
                                    FontSize="14" Foreground="{StaticResource TextSecondaryBrush}"
                                    Margin="0,8,0,16"/>
 
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Button Content="Browse Mods" Style="{StaticResource PrimaryButton}"
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Browse Mods" Style="{StaticResource PrimaryButton}" Margin="0,0,12,0"
                                     Command="{Binding OpenModBrowserCommand}"/>
-                            <Button Content="Create Server" Style="{StaticResource SecondaryButton}"
+                            <Button Content="Create Server" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0"
                                     Command="{Binding OpenServerManagerCommand}"/>
                             <Button Content="Mod Packs" Style="{StaticResource AccentButton}"
                                     Command="{Binding OpenModPacksCommand}"/>
@@ -73,7 +73,7 @@
             </Grid>
 
             <!-- Featured Mod Packs -->
-            <Border Style="{StaticResource Card}">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
                 <StackPanel>
                     <TextBlock Text="Featured Mod Packs" FontSize="20" FontWeight="SemiBold"
                                Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
@@ -134,7 +134,7 @@
             </Border>
 
             <!-- Popular Mods -->
-            <Border Style="{StaticResource Card}">
+            <Border Style="{StaticResource Card}" Margin="0,0,0,24">
                 <StackPanel>
                     <Grid Margin="0,0,0,16">
                         <TextBlock Text="Trending Mods" FontSize="20" FontWeight="SemiBold"
